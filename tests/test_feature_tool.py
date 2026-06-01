@@ -274,3 +274,110 @@ class TestBareDataKernel:
         stored = s.get_result("twi", "ann1", s.list_results("twi")["ann1"][0])
         assert "data" in stored
         assert stored["data"]["mean_twi"] == 8.2
+
+
+# ---------------------------------------------------------------------------
+# C3 batch fan-out tests
+# ---------------------------------------------------------------------------
+
+class TestFeatureToolBatch:
+    """@feature_tool with feature=[list] → batch fan-out."""
+
+    def _make_store_with_features(self):
+        from aihydro_core.store.memory import InMemoryStore
+        from aihydro_core.primitives import Feature
+        store = InMemoryStore()
+        for fid, name in [("ann1", "Ann 1"), ("ann2", "Ann 2"), ("ann3", "Ann 3")]:
+            store.put_feature(Feature(
+                feature_id=fid,
+                geojson={"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]},
+                name=name,
+            ))
+        store.set_active_feature_id("ann1")
+        return store
+
+    def test_batch_returns_batch_flag(self):
+        from aihydro_core.features.compute import feature_tool
+
+        @feature_tool(product="test_batch")
+        def _kernel(geom, **p):
+            return {"value": 42}
+
+        store = self._make_store_with_features()
+        result = _kernel(store, feature=["ann1", "ann2"])
+        assert result["batch"] is True
+        assert result["n_features"] == 2
+        assert result["n_success"] == 2
+
+    def test_batch_results_keyed_by_feature_id(self):
+        from aihydro_core.features.compute import feature_tool
+
+        call_count = [0]
+
+        @feature_tool(product="test_keyed")
+        def _kernel(geom, **p):
+            call_count[0] += 1
+            return {"call": call_count[0]}
+
+        store = self._make_store_with_features()
+        result = _kernel(store, feature=["ann1", "ann2", "ann3"])
+        assert set(result["results"].keys()) == {"ann1", "ann2", "ann3"}
+        assert call_count[0] == 3   # kernel called once per feature
+
+    def test_batch_each_result_cached_independently(self):
+        from aihydro_core.features.compute import feature_tool
+        from aihydro_core.primitives.hashing import param_hash
+
+        @feature_tool(product="test_cached_batch")
+        def _kernel(geom, **p):
+            return {"ok": True}
+
+        store = self._make_store_with_features()
+        _kernel(store, feature=["ann1", "ann2"])
+
+        key = param_hash({})
+        r1 = store.get_result("test_cached_batch", "ann1", key)
+        r2 = store.get_result("test_cached_batch", "ann2", key)
+        assert r1 is not None
+        assert r2 is not None
+        assert r1 is not r2   # separate objects
+
+    def test_batch_partial_error_isolates(self):
+        from aihydro_core.features.compute import feature_tool
+
+        @feature_tool(product="test_partial_err")
+        def _kernel(geom, **p):
+            if p.get("fail"):
+                raise ValueError("forced error")
+            return {"ok": True}
+
+        store = self._make_store_with_features()
+        # ann2 will fail because we can't pass feature-specific params via the
+        # decorator — so we test via a side-effect flag (mock the registry)
+        # Simpler: just pass an unknown feature ref to trigger FeatureNotFoundError
+        result = _kernel(store, feature=["ann1", "NONEXISTENT_FEATURE"])
+        assert result["n_success"] == 1
+        assert result["n_error"] == 1
+        assert "ann1" in result["results"]
+        assert "errors" in result
+
+    def test_batch_cache_hits_respected(self):
+        from aihydro_core.features.compute import feature_tool
+        from aihydro_core.primitives.hashing import param_hash
+
+        calls = [0]
+
+        @feature_tool(product="test_cache_hit_batch")
+        def _kernel(geom, **p):
+            calls[0] += 1
+            return {"v": calls[0]}
+
+        store = self._make_store_with_features()
+        # First run — 2 computes
+        _kernel(store, feature=["ann1", "ann2"])
+        assert calls[0] == 2
+
+        # Second run — both should cache hit, kernel not called
+        result = _kernel(store, feature=["ann1", "ann2"])
+        assert calls[0] == 2   # no new calls
+        assert all(r.get("_cache_hit") for r in result["results"].values())

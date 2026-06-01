@@ -104,7 +104,7 @@ def feature_tool(
         @functools.wraps(fn)
         def wrapper(
             store: "Store",
-            feature: str | dict | None = None,
+            feature: "str | dict | list | None" = None,
             **params: Any,
         ) -> dict:
             """
@@ -114,11 +114,38 @@ def feature_tool(
             ----------
             store : Store
                 Loaded Store instance (e.g. HydroSession).
-            feature : str | dict | None
+            feature : str | dict | list | None
                 Feature reference. None → active/single feature.
+                **list** → batch fan-out: each element resolved independently;
+                returns ``{"batch": True, "n_features": N, "results": {...}}``.
             **params
                 Forwarded to the kernel; also form the cache key.
             """
+            # C3: batch fan-out — feature is a list of refs
+            if isinstance(feature, list):
+                results: dict[str, dict] = {}
+                errors: dict[str, str] = {}
+                for ref in feature:
+                    try:
+                        r = wrapper(store, feature=ref, **params)
+                        results[r.get("feature_id", str(ref))] = r
+                    except Exception as exc:
+                        fid = str(ref)
+                        errors[fid] = str(exc)
+                        log.warning(
+                            "Batch feature_tool %s failed for ref=%r: %s",
+                            product, ref, exc,
+                        )
+                return {
+                    "batch": True,
+                    "product": product,
+                    "n_features": len(feature),
+                    "n_success": len(results),
+                    "n_error": len(errors),
+                    "results": results,
+                    **({"errors": errors} if errors else {}),
+                }
+
             # 1. Resolve feature ref → Feature
             registry = FeatureRegistry(store)
             feat = registry.resolve(feature)
