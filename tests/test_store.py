@@ -99,7 +99,7 @@ class TestInMemoryStore:
             param_hash="abc",
             content_hash="def",
         )
-        store.add_artifact(art)
+        store.store_artifact(art)
         store.add_citations(["usgs_3dep", "copernicus_glo30"])
         assert len(store.get_artifacts()) == 1
         assert "usgs_3dep" in store.get_citations()

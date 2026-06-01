@@ -77,7 +77,7 @@ class InMemoryStore:
     # Provenance                                                           #
     # ------------------------------------------------------------------ #
 
-    def add_artifact(self, art: Artifact) -> None:
+    def store_artifact(self, art: Artifact) -> None:
         self._artifacts.append(art)
 
     def add_citations(self, keys: list[str]) -> None:

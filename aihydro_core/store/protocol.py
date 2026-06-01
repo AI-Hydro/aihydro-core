@@ -98,7 +98,7 @@ class Store(Protocol):
     # Provenance                                                           #
     # ------------------------------------------------------------------ #
 
-    def add_artifact(self, art: "Artifact") -> None:
+    def store_artifact(self, art: "Artifact") -> None:
         """Record an Artifact in the store's provenance manifest."""
         ...
 
