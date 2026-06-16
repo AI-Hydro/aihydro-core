@@ -17,12 +17,13 @@ Example::
     @feature_tool(product="twi", citations=["usgs_3dep", "copernicus_glo30"])
     def _twi_stats_kernel(geom: dict, *, resolution: int = 30) -> dict:
         # geom is already resolved — pure computation only.
-        from ai_hydro.analysis.twi import compute_twi_result
-        return compute_twi_result(watershed_geojson=geom, resolution=resolution)
+        # (The domain kernel is imported by the *caller's* package, never here:
+        #  core depends on nobody.)
+        return compute_twi_stats(geom, resolution=resolution)
 
-    # MCP tool thin wrapper:
-    session = HydroSession.load(session_id)
-    result = _twi_stats_kernel(store=session, feature=feature_ref, resolution=30)
+    # Domain-side thin wrapper (in the tools package, not core):
+    store = load_store(store_id)
+    result = _twi_stats_kernel(store=store, feature=feature_ref, resolution=30)
 
 Wrapped function signature
 --------------------------

@@ -24,6 +24,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 log = logging.getLogger("aihydro_core.jobs")
 
@@ -32,6 +33,31 @@ _REGISTRY = _JOBS_DIR / "registry.json"
 _SUBAGENTS_DIR = Path.home() / ".aihydro" / "subagents"   # TypeScript-spawned CLI subagents
 
 _TERMINAL = {"complete", "failed", "cancelled"}
+
+
+# --------------------------------------------------------------------------- #
+# Extension hook — domain layers contribute extra artifact-dir candidates
+# without core importing them. core depends on NOBODY (enforced by import-linter).
+#
+# A domain package (e.g. ai_hydro.session) calls register_artifact_dir_provider()
+# at import time with a callable(job_id) -> list[Path]. _resolve_artifact_dir
+# consults every registered provider, so the dependency points DOWN
+# (tools → core), never up.
+# --------------------------------------------------------------------------- #
+_ARTIFACT_DIR_PROVIDERS: list[Callable[[str], list[Path]]] = []
+
+
+def register_artifact_dir_provider(fn: Callable[[str], list[Path]]) -> Callable[[str], list[Path]]:
+    """
+    Register a callable that maps a ``job_id`` to extra candidate artifact dirs.
+
+    Used by optional domain layers (e.g. the session store) to teach the jobs
+    block where their runs live, without core ever importing those layers.
+    Returns ``fn`` unchanged so it can be used as a decorator.
+    """
+    if fn not in _ARTIFACT_DIR_PROVIDERS:
+        _ARTIFACT_DIR_PROVIDERS.append(fn)
+    return fn
 
 
 def _now() -> str:
@@ -164,19 +190,15 @@ def _resolve_artifact_dir(job_id: str) -> Path | None:
 
     # Legacy fallback: Python-spawned jobs started before the registry existed.
     candidates = [Path.home() / ".aihydro" / "models" / "runs" / job_id]
-    try:
-        # Optional session layer — core doesn't depend on it, but uses it when available.
-        from ai_hydro.session.store import _SESSIONS_DIR  # type: ignore[import]
-        if _SESSIONS_DIR.exists():
-            for sf in _SESSIONS_DIR.glob("*.json"):
-                try:
-                    ws = json.loads(sf.read_text()).get("workspace_dir")
-                    if ws:
-                        candidates.append(Path(ws) / "runs" / job_id)
-                except (OSError, json.JSONDecodeError):
-                    pass
-    except Exception:   # pragma: no cover - session layer is optional from core's perspective
-        pass
+
+    # Optional domain layers contribute extra candidates via the provider hook
+    # (e.g. the session store maps each session's workspace_dir → runs/<job_id>).
+    # core never imports them; they register downward into core.
+    for provider in _ARTIFACT_DIR_PROVIDERS:
+        try:
+            candidates.extend(provider(job_id))
+        except Exception:   # pragma: no cover - a misbehaving provider must not break resolution
+            log.debug("artifact-dir provider %r failed for job %s", provider, job_id)
 
     for c in candidates:
         if (c / "status.json").exists():
@@ -349,4 +371,5 @@ __all__ = [
     "get_job_result",
     "cancel_job",
     "list_jobs",
+    "register_artifact_dir_provider",
 ]

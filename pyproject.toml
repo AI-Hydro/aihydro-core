@@ -32,6 +32,7 @@ dependencies = []
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
+    "import-linter>=2.0",
 ]
 
 [project.urls]
@@ -47,3 +48,18 @@ asyncio_mode = "auto"
 markers = [
     "live: tests requiring internet or real filesystem",
 ]
+
+# --------------------------------------------------------------------------- #
+# Layering contract — core depends on NOBODY.
+# Run with:  lint-imports  (requires `pip install import-linter`)
+# Also enforced offline by tests/test_layering.py (no extra install needed).
+# --------------------------------------------------------------------------- #
+[tool.importlinter]
+root_package = "aihydro_core"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "aihydro_core depends on nobody above it"
+type = "forbidden"
+source_modules = ["aihydro_core"]
+forbidden_modules = ["ai_hydro", "aihydro_data"]

@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "aihydro-core: Zero-Dependency Substrate for Scientific Defensibility"
+version: "0.1.1"
+date-released: "2026-06-13"
+license: Apache-2.0
+repository-code: "https://github.com/AI-Hydro/aihydro-core"
+abstract: >
+  aihydro-core is the zero-dependency substrate of the AI-Hydro ecosystem.
+  It provides content-addressable hashing (SHA-256), the Store Protocol,
+  a detached-process jobs substrate, a feature addressing system, and the
+  domain-free science Protocols (ClaimStore, Auditor, UncertaintyProvider)
+  that make research defensibility portable across domains.
+authors:
+  - family-names: Galib
+    given-names: Mohammad
+    affiliation: "Purdue University"
+    email: mgalib@purdue.edu
+keywords:
+  - reproducibility
+  - provenance
+  - hashing
+  - protocols
+  - hydrology
+  - scientific-defensibility
+preferred-citation:
+  type: software
+  title: "aihydro-core: Zero-Dependency Substrate for Scientific Defensibility"
+  authors:
+    - family-names: Galib
+      given-names: Mohammad
+      affiliation: "Purdue University"
+      email: mgalib@purdue.edu
+  version: "0.1.1"
+  date-released: "2026-06-13"
+  license: Apache-2.0
+  repository-code: "https://github.com/AI-Hydro/aihydro-core"

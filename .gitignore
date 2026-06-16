@@ -6,3 +6,5 @@ build/
 .pytest_cache/
 .ruff_cache/
 *.egg
+.DS_Store
+**/.DS_Store
