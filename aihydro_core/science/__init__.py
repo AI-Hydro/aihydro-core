@@ -1,20 +1,17 @@
 """
-science — domain-free defensibility protocols for AI-Hydro.
+science — defensibility protocols + bootstrap implementations for AI-Hydro.
 
-Three cross-cutting blocks that define the abstract vocabulary any research
-platform must implement to produce defensible, auditable outputs:
+Three cross-cutting blocks:
 
     claim       — claim lifecycle (status, evidence spans, ClaimStore Protocol)
     audit       — prose provenance checking (AuditReport, Auditor Protocol)
-    uncertainty — quantified estimate shape (UncertaintyEstimate, Provider Protocol)
+    uncertainty — quantified estimate shape, Provider Protocol, AND concrete
+                  bootstrap implementations (bootstrap_ci, block_bootstrap_ci,
+                  bootstrap_dict).  Requires the [science] extra (numpy).
 
-These are *Protocols*, not implementations. The hydrology binding lives in
-aihydro-tools; the marine/atmospheric/climate binding would live in its own
-domain package. Any package that implements these structural interfaces gains
-the full defensibility pipeline for free.
-
-All types here are stdlib-only (TypedDict, Protocol, Literal, runtime_checkable).
-No pydantic, no numpy, no domain knowledge.
+The protocol types (UncertaintyProvider, UncertaintyEstimate, etc.) are
+stdlib-only.  The bootstrap functions additionally need numpy — import them
+only after installing aihydro-core[science].
 """
 from __future__ import annotations
 
@@ -34,6 +31,10 @@ from .uncertainty import (
     UncertaintyMethod,
     UncertaintyEstimate,
     UncertaintyProvider,
+    UncertaintyResult,
+    bootstrap_ci,
+    block_bootstrap_ci,
+    bootstrap_dict,
 )
 
 __all__ = [
@@ -47,8 +48,13 @@ __all__ = [
     "AuditViolationRecord",
     "AuditReportRecord",
     "Auditor",
-    # uncertainty
+    # uncertainty — protocol
     "UncertaintyMethod",
     "UncertaintyEstimate",
     "UncertaintyProvider",
+    # uncertainty — implementations
+    "UncertaintyResult",
+    "bootstrap_ci",
+    "block_bootstrap_ci",
+    "bootstrap_dict",
 ]
