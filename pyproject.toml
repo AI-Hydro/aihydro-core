@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aihydro-core"
-version = "0.1.0"
-description = "AI-Hydro robustness substrate: hashing, provenance, Store protocol, async jobs, feature addressing"
+version = "0.2.0"
+description = "AI-Hydro robustness substrate: hashing, provenance, Store protocol, async jobs, feature addressing, result contract"
 requires-python = ">=3.9"
 license = {text = "Apache-2.0"}
 authors = [
@@ -24,15 +24,21 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
-# Zero heavy dependencies — this is the substrate.
-# Pure stdlib + optional typing_extensions for 3.9 compat.
+# Zero heavy dependencies in the BASE — this is the substrate.
+# `import aihydro_core` is stdlib-only. The pydantic-backed result contract
+# (contracts.py) and the science kernel (science/) are gated behind extras so
+# the base substrate stays dependency-free; consumers that use the contract
+# declare `aihydro-core[contracts]`.
 dependencies = []
 
 [project.optional-dependencies]
+contracts = ["pydantic>=2.0"]   # HydroResult/HydroMeta/DataSource/HydroTool
+science = ["pydantic>=2.0"]     # Claim/Auditor/UncertaintyProvider kernel
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
     "import-linter>=2.0",
+    "pydantic>=2.0",
 ]
 
 [project.urls]

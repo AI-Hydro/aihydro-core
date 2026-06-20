@@ -305,4 +305,4 @@ class TestSciencePackageImport(unittest.TestCase):
 
     def test_core_version_updated(self):
         import aihydro_core
-        self.assertEqual(aihydro_core.__version__, "0.1.1")
+        self.assertEqual(aihydro_core.__version__, "0.2.0")
