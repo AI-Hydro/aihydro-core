@@ -25,6 +25,8 @@ See AIHYDRO_CORE_DESIGN.md (local-docs/) for the full architecture.
 
 from typing import TYPE_CHECKING
 
+from aihydro_core.primitives.errors import ToolError  # noqa: F401 — eager, stdlib-only
+
 __version__ = "0.2.0"
 
 # Contract names re-exported lazily (pydantic-backed; see contracts.py).

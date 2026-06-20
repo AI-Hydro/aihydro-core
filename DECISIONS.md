@@ -33,9 +33,11 @@ that narrative is later dropped.
 `from ai_hydro.core import HydroResult` keeps working. Shim kept ≥ one release.
 Gate: full `aihydro-tools` suite green (929 passed) + `aihydro-core` (100 passed).
 
-**Deferred — `ToolError` unification.** Two `ToolError`s exist: the tool-facing
-one (`code/message/tool/recovery/alternatives`, used across aihydro-tools) and
-core's `primitives/errors.py` one (`code/message/details`). They are
-**not** unified here — the signatures differ and forcing it now would be a
-behavior change. The richer `ToolError` stays local in the tools shim. Unify in
-a dedicated follow-up (extend core's to accept the richer kwargs as a superset).
+**`ToolError` unified (Wave A2a, 2026-06-19).** The superset signature is:
+`(code, message, details=None, *, tool=None, recovery=None, alternatives=None)`.
+`tool/recovery/alternatives` are keyword-only so the old positional
+`(code, message, details)` form — used by `FeatureNotFoundError` and
+`StoreError` — keeps working unchanged. `ToolError` is now exported eagerly at
+core's top level (stdlib-only, no lazy needed). The tools shim re-exports from
+core; `from ai_hydro.core import ToolError` and `from aihydro_core import ToolError`
+return the same class object. Gate: 103 core tests green + identity check passed.

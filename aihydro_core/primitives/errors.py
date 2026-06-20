@@ -8,24 +8,44 @@ class ToolError(Exception):
     """
     A structured error returned by any aihydro tool or block.
 
-    Carries a machine-readable code and a teaching message — mirrors the
-    reliability middleware pattern from arg_repair.py. Callers can either
-    raise this or call .to_dict() to surface it as a tool response envelope.
+    Unified superset of the original core (code/message/details) and the
+    tool-facing (code/message/tool/recovery/alternatives) signatures.
+    ``tool``, ``recovery``, and ``alternatives`` are keyword-only so the
+    positional ``(code, message, details)`` form keeps working unchanged.
     """
 
-    def __init__(self, code: str, message: str, details: dict | None = None):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        details: dict | None = None,
+        *,
+        tool: str | None = None,
+        recovery: str | None = None,
+        alternatives: list[str] | None = None,
+    ):
         self.code = code
         self.message = message
         self.details = details or {}
+        self.tool = tool
+        self.recovery = recovery
+        self.alternatives = alternatives or []
         super().__init__(message)
 
     def to_dict(self) -> dict:
-        return {
+        d: dict = {
             "error": True,
             "code": self.code,
             "message": self.message,
             **self.details,
         }
+        if self.tool is not None:
+            d["tool"] = self.tool
+        if self.recovery is not None:
+            d["recovery"] = self.recovery
+        if self.alternatives:
+            d["alternatives"] = self.alternatives
+        return d
 
 
 class FeatureNotFoundError(ToolError):
