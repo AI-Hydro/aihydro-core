@@ -89,6 +89,72 @@ class HydroMeta(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# aihydro-lsh provenance atoms (promoted here so all packages can import them
+# without depending on aihydro-lsh)
+# ---------------------------------------------------------------------------
+
+class AttrProvenance(BaseModel):
+    """
+    Per-family provenance for one recipe's contribution to an AttributeResult.
+
+    The recipe that computes a family fills this in and returns it as the
+    optional 4th element of extract().  The pipeline assembles per-family
+    instances into AttributeResult.provenance keyed by family name.
+
+    Design principle: the *package* is the authority — it records exactly
+    which product, region, resolution, and observation type was used, so
+    agents can relay this verbatim without interpreting data quality.
+    """
+    source: str = Field(..., description="Human-readable source, e.g. 'ERA5-Land / ECMWF'")
+    product: str = Field(default="", description="Product ID, e.g. 'ERA5L_PRECIP'")
+    region: str = Field(default="unknown", description="'CONUS', 'global', or region name")
+    resolution_m: int | None = Field(None, description="Spatial resolution in metres")
+    is_observed: bool = Field(
+        default=False,
+        description="True for gauge/station observations; False for modelled or reanalysis",
+    )
+    quality_flags: list[str] = Field(
+        default_factory=list,
+        description="Non-fatal data-quality notes (NaN attrs, fallback sources, etc.)",
+    )
+    recipe: str = Field(default="", description="Recipe family name that produced these attrs")
+    variables_used: list[str] = Field(
+        default_factory=list, description="Raw variable names fetched from the data backend"
+    )
+
+
+class ResultMeta(BaseModel):
+    """
+    Run-level metadata stamped on every AttributeResult.
+
+    Carries everything needed to reproduce the run and cite the software
+    versions used.  The content_hash is a SHA-256 of the full attrs dict
+    (NaN → null); it changes only when attribute values change, allowing
+    exact reproducibility checks.
+    """
+    lsh_version: str = Field(default="unknown", description="aihydro-lsh package version")
+    data_version: str = Field(default="unknown", description="aihydro-data package version")
+    watershed_version: str = Field(default="unknown", description="aihydro-watershed package version")
+    bbox: list[float] = Field(
+        default_factory=list,
+        description="[minx, miny, maxx, maxy] bounding box in EPSG:4326",
+    )
+    start: str = Field(default="", description="Climate window start (ISO date)")
+    end: str = Field(default="", description="Climate window end (ISO date)")
+    n_attrs: int = Field(default=0, description="Total number of extracted attributes")
+    n_families: int = Field(default=0, description="Number of recipe families that succeeded")
+    n_errors: int = Field(default=0, description="Number of recipe families that failed")
+    duration_s: float = Field(default=0.0, description="Total wall-clock time in seconds")
+    content_hash: str = Field(
+        default="", description="SHA-256 of attrs dict (NaN→null, keys sorted) for reproducibility"
+    )
+    computed_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        description="ISO 8601 UTC timestamp of computation",
+    )
+
+
+# ---------------------------------------------------------------------------
 # The universal tool output type
 # ---------------------------------------------------------------------------
 
@@ -162,4 +228,4 @@ class HydroTool:
         }
 
 
-__all__ = ["DataSource", "HydroMeta", "HydroResult", "HydroTool"]
+__all__ = ["DataSource", "HydroMeta", "HydroResult", "HydroTool", "AttrProvenance", "ResultMeta"]

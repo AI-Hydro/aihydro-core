@@ -30,7 +30,10 @@ from aihydro_core.primitives.errors import ToolError  # noqa: F401 — eager, st
 __version__ = "0.2.0"
 
 # Contract names re-exported lazily (pydantic-backed; see contracts.py).
-_LAZY_CONTRACT_EXPORTS = {"HydroResult", "HydroMeta", "DataSource", "HydroTool"}
+_LAZY_CONTRACT_EXPORTS = {
+    "HydroResult", "HydroMeta", "DataSource", "HydroTool",
+    "AttrProvenance", "ResultMeta",
+}
 
 
 def __getattr__(name: str):
@@ -46,4 +49,7 @@ def __dir__():
 
 
 if TYPE_CHECKING:  # static analyzers / IDEs see the names without triggering pydantic
-    from aihydro_core.contracts import DataSource, HydroMeta, HydroResult, HydroTool
+    from aihydro_core.contracts import (
+        DataSource, HydroMeta, HydroResult, HydroTool,
+        AttrProvenance, ResultMeta,
+    )
