@@ -20,3 +20,18 @@ pip install aihydro-core
 
 - [aihydro-data](https://github.com/AI-Hydro/AIhydro-data) — global hydrology dataverse
 - [AI-Hydro](https://github.com/AI-Hydro/AI-Hydro) — AI-native hydrologic modelling platform
+
+## Citation
+
+If you use `aihydro-core` in your research, please cite:
+
+```bibtex
+@software{aihydro_core_2026,
+  title   = {aihydro-core: Zero-Dependency Substrate for Scientific Defensibility},
+  author  = {Galib, Mohammad and Merwade, Venkatesh},
+  year    = {2026},
+  version = {0.2.0},
+  doi     = {10.5281/zenodo.20823444},
+  url     = {https://doi.org/10.5281/zenodo.20823444}
+}
+```
