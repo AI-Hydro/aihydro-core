@@ -15,6 +15,8 @@ only after installing aihydro-core[science].
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .claim import (
     ClaimStatus,
     EvidenceSpan,
@@ -31,11 +33,36 @@ from .uncertainty import (
     UncertaintyMethod,
     UncertaintyEstimate,
     UncertaintyProvider,
-    UncertaintyResult,
-    bootstrap_ci,
-    block_bootstrap_ci,
-    bootstrap_dict,
 )
+
+_BOOTSTRAP_EXPORTS = {
+    "UncertaintyResult",
+    "bootstrap_ci",
+    "block_bootstrap_ci",
+    "bootstrap_dict",
+}
+
+
+def __getattr__(name: str):
+    """Lazily expose numpy-backed uncertainty functions when [science] is installed."""
+    if name in _BOOTSTRAP_EXPORTS:
+        from . import uncertainty
+
+        return getattr(uncertainty, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(list(globals()) + list(_BOOTSTRAP_EXPORTS))
+
+
+if TYPE_CHECKING:
+    from .uncertainty import (
+        UncertaintyResult,
+        bootstrap_ci,
+        block_bootstrap_ci,
+        bootstrap_dict,
+    )
 
 __all__ = [
     # claim

@@ -21,7 +21,7 @@ a data object and returns an UncertaintyEstimate dict — including
 """
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, TYPE_CHECKING, runtime_checkable
 from typing import Literal
 
 
@@ -125,13 +125,31 @@ def null_estimate(reason: str = "not computed") -> "UncertaintyEstimate":
     }
 
 
-# ---------------------------------------------------------------------------
-# Re-export concrete bootstrap implementations (requires numpy; [science] extra)
-# ---------------------------------------------------------------------------
+_BOOTSTRAP_EXPORTS = {
+    "UncertaintyResult",
+    "bootstrap_ci",
+    "block_bootstrap_ci",
+    "bootstrap_dict",
+}
 
-from ._bootstrap import (  # noqa: E402,F401
-    UncertaintyResult,
-    bootstrap_ci,
-    block_bootstrap_ci,
-    bootstrap_dict,
-)
+
+def __getattr__(name: str):
+    """Lazily load numpy-backed bootstrap implementations on first access."""
+    if name in _BOOTSTRAP_EXPORTS:
+        from . import _bootstrap
+
+        return getattr(_bootstrap, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(list(globals()) + list(_BOOTSTRAP_EXPORTS))
+
+
+if TYPE_CHECKING:
+    from ._bootstrap import (
+        UncertaintyResult,
+        bootstrap_ci,
+        block_bootstrap_ci,
+        bootstrap_dict,
+    )
