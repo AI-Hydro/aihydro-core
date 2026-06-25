@@ -1,10 +1,9 @@
 """
-Uncertainty protocol — the abstract shape of a quantified estimate.
+Uncertainty protocol for aihydro-core.
 
-Every Tier-1 scientific result in aihydro-tools must return an uncertainty
-estimate in this form. The kernel defines the vocabulary; actual
-bootstrap/block-bootstrap computation lives in
-ai_hydro/analysis/uncertainty.py (aihydro-tools).
+Provides the abstract contract (UncertaintyProvider Protocol, UncertaintyEstimate
+vocabulary) and re-exports the concrete bootstrap implementations from the
+private ``_bootstrap`` module (which requires numpy — install [science] extra).
 
 Design
 ------
@@ -13,13 +12,16 @@ add extra keys (e.g. "p_value", "degrees_of_freedom") without breaking the
 core contract. The minimum required keys are validated by
 ``estimate_has_required_keys()``.
 
+UncertaintyResult is a TypedDict (stricter; returned by the bootstrap functions)
+that satisfies the UncertaintyEstimate contract.
+
 The UncertaintyProvider Protocol is satisfied by any callable that accepts
-a data object and returns an UncertaintyEstimate dict. aihydro-tools's
-``bootstrap_ci`` and ``block_bootstrap_ci`` functions satisfy this.
+a data object and returns an UncertaintyEstimate dict — including
+``bootstrap_ci`` and ``block_bootstrap_ci`` defined in ``_bootstrap.py``.
 """
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, TYPE_CHECKING, runtime_checkable
 from typing import Literal
 
 
@@ -83,7 +85,7 @@ class UncertaintyProvider(Protocol):
     """
     Protocol satisfied by any callable that can estimate uncertainty.
 
-    The concrete implementations in aihydro-tools are:
+    Concrete implementations (defined below in this module):
       - ``bootstrap_ci(fn, data, **kwargs)`` — IID resampling
       - ``block_bootstrap_ci(fn, data, **kwargs)`` — for autocorrelated series
 
@@ -121,3 +123,33 @@ def null_estimate(reason: str = "not computed") -> "UncertaintyEstimate":
         "n": 0,
         "reason": reason,
     }
+
+
+_BOOTSTRAP_EXPORTS = {
+    "UncertaintyResult",
+    "bootstrap_ci",
+    "block_bootstrap_ci",
+    "bootstrap_dict",
+}
+
+
+def __getattr__(name: str):
+    """Lazily load numpy-backed bootstrap implementations on first access."""
+    if name in _BOOTSTRAP_EXPORTS:
+        from . import _bootstrap
+
+        return getattr(_bootstrap, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(list(globals()) + list(_BOOTSTRAP_EXPORTS))
+
+
+if TYPE_CHECKING:
+    from ._bootstrap import (
+        UncertaintyResult,
+        bootstrap_ci,
+        block_bootstrap_ci,
+        bootstrap_dict,
+    )

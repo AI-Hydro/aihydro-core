@@ -1,22 +1,21 @@
 """
-science — domain-free defensibility protocols for AI-Hydro.
+science — defensibility protocols + bootstrap implementations for AI-Hydro.
 
-Three cross-cutting blocks that define the abstract vocabulary any research
-platform must implement to produce defensible, auditable outputs:
+Three cross-cutting blocks:
 
     claim       — claim lifecycle (status, evidence spans, ClaimStore Protocol)
     audit       — prose provenance checking (AuditReport, Auditor Protocol)
-    uncertainty — quantified estimate shape (UncertaintyEstimate, Provider Protocol)
+    uncertainty — quantified estimate shape, Provider Protocol, AND concrete
+                  bootstrap implementations (bootstrap_ci, block_bootstrap_ci,
+                  bootstrap_dict).  Requires the [science] extra (numpy).
 
-These are *Protocols*, not implementations. The hydrology binding lives in
-aihydro-tools; the marine/atmospheric/climate binding would live in its own
-domain package. Any package that implements these structural interfaces gains
-the full defensibility pipeline for free.
-
-All types here are stdlib-only (TypedDict, Protocol, Literal, runtime_checkable).
-No pydantic, no numpy, no domain knowledge.
+The protocol types (UncertaintyProvider, UncertaintyEstimate, etc.) are
+stdlib-only.  The bootstrap functions additionally need numpy — import them
+only after installing aihydro-core[science].
 """
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from .claim import (
     ClaimStatus,
@@ -36,6 +35,35 @@ from .uncertainty import (
     UncertaintyProvider,
 )
 
+_BOOTSTRAP_EXPORTS = {
+    "UncertaintyResult",
+    "bootstrap_ci",
+    "block_bootstrap_ci",
+    "bootstrap_dict",
+}
+
+
+def __getattr__(name: str):
+    """Lazily expose numpy-backed uncertainty functions when [science] is installed."""
+    if name in _BOOTSTRAP_EXPORTS:
+        from . import uncertainty
+
+        return getattr(uncertainty, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(list(globals()) + list(_BOOTSTRAP_EXPORTS))
+
+
+if TYPE_CHECKING:
+    from .uncertainty import (
+        UncertaintyResult,
+        bootstrap_ci,
+        block_bootstrap_ci,
+        bootstrap_dict,
+    )
+
 __all__ = [
     # claim
     "ClaimStatus",
@@ -47,8 +75,13 @@ __all__ = [
     "AuditViolationRecord",
     "AuditReportRecord",
     "Auditor",
-    # uncertainty
+    # uncertainty — protocol
     "UncertaintyMethod",
     "UncertaintyEstimate",
     "UncertaintyProvider",
+    # uncertainty — implementations
+    "UncertaintyResult",
+    "bootstrap_ci",
+    "block_bootstrap_ci",
+    "bootstrap_dict",
 ]
