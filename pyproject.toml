@@ -39,6 +39,7 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "import-linter>=2.0",
     "pydantic>=2.0",
+    "ruff>=0.1.0",
 ]
 
 [project.urls]
@@ -48,6 +49,14 @@ Repository = "https://github.com/AI-Hydro/aihydro-core"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["aihydro_core*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
