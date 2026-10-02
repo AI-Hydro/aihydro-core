@@ -1,0 +1,145 @@
+[
+  {
+    "actor": {
+      "id": "aihydro-tools",
+      "kind": "package"
+    },
+    "canonicalization": "aihydro.c14n/1",
+    "cause": {
+      "reason": "created",
+      "tool": "add_claim"
+    },
+    "claim_id": "bfi-test-claim",
+    "content": {
+      "claim_type": "empirical_result",
+      "evidence_spans": [
+        {
+          "metric_ref": "baseflow_index",
+          "source_id": "sigs.1",
+          "source_type": "run"
+        }
+      ],
+      "limitations": [
+        "synthetic fixture"
+      ],
+      "revision_marker": 0,
+      "schema": "aihydro.claim_revision/2",
+      "scope": {
+        "basin_refs": [
+          {
+            "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+            "label": "01013500"
+          }
+        ],
+        "basins": [
+          "01013500"
+        ],
+        "metric": "baseflow_index"
+      },
+      "status": "draft",
+      "text": "The baseflow index is 0.585 (90% CI 0.571-0.599)."
+    },
+    "record_digest": "sha256:7e62eeed3b4b4e211560ee19c184cd11aadcfa94831c2d23a415e1a637eaaca6",
+    "recorded_at": "2026-10-03T10:00:05.500000Z",
+    "revision": 0,
+    "revision_digest": "sha256:edce1255f13c1c5461e13204ad3633cfbc246162d3440c3530a579efb6783cf3",
+    "schema": "aihydro.claim_revision_record/1",
+    "session_id": "synthetic-session-1"
+  },
+  {
+    "actor": {
+      "id": "aihydro-tools",
+      "kind": "package"
+    },
+    "canonicalization": "aihydro.c14n/1",
+    "cause": {
+      "reason": "status_update",
+      "tool": "update_claim_status"
+    },
+    "claim_id": "bfi-test-claim",
+    "content": {
+      "claim_type": "empirical_result",
+      "evidence_spans": [
+        {
+          "metric_ref": "baseflow_index",
+          "source_id": "sigs.1",
+          "source_type": "run"
+        }
+      ],
+      "limitations": [
+        "synthetic fixture"
+      ],
+      "revision_marker": 1,
+      "schema": "aihydro.claim_revision/2",
+      "scope": {
+        "basin_refs": [
+          {
+            "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+            "label": "01013500"
+          }
+        ],
+        "basins": [
+          "01013500"
+        ],
+        "metric": "baseflow_index"
+      },
+      "status": "supported",
+      "text": "The baseflow index is 0.585 (90% CI 0.571-0.599)."
+    },
+    "record_digest": "sha256:2996dba4af143609c734bf96ae9ae1b5a69d52d08163eda5e1f34c2fa209c97c",
+    "recorded_at": "2026-10-03T10:00:06.500000Z",
+    "revision": 1,
+    "revision_digest": "sha256:557f1d6f5a3424a0bca6ff184a71b3331eb0d6dc06de6a35eee45c3b47ee229e",
+    "schema": "aihydro.claim_revision_record/1",
+    "session_id": "synthetic-session-1",
+    "supersedes": "sha256:edce1255f13c1c5461e13204ad3633cfbc246162d3440c3530a579efb6783cf3"
+  },
+  {
+    "actor": {
+      "id": "aihydro-tools",
+      "kind": "package"
+    },
+    "canonicalization": "aihydro.c14n/1",
+    "cause": {
+      "reason": "status_update",
+      "tool": "update_claim_status"
+    },
+    "claim_id": "bfi-test-claim",
+    "content": {
+      "claim_type": "empirical_result",
+      "evidence_spans": [
+        {
+          "metric_ref": "baseflow_index",
+          "source_id": "sigs.1",
+          "source_type": "run"
+        }
+      ],
+      "limitations": [
+        "synthetic fixture"
+      ],
+      "revision_marker": 2,
+      "schema": "aihydro.claim_revision/2",
+      "scope": {
+        "basin_refs": [
+          {
+            "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+            "label": "01013500"
+          }
+        ],
+        "basins": [
+          "01013500"
+        ],
+        "metric": "baseflow_index"
+      },
+      "status": "supported",
+      "text": "The baseflow index is 0.585 (90% CI 0.571-0.599)."
+    },
+    "record_digest": "sha256:0e4ef587cbec189e61cd56f3fc459afef2391a81df2d928db8426ae3cc65e417",
+    "recorded_at": "2026-10-03T10:00:07.500000Z",
+    "revision": 2,
+    "revision_digest": "sha256:730a0368a703e641081ade793180fcf7241fb17881e2a5ba41e4a8021c6a38b9",
+    "schema": "aihydro.claim_revision_record/1",
+    "session_id": "synthetic-session-1",
+    "supersedes": "sha256:557f1d6f5a3424a0bca6ff184a71b3331eb0d6dc06de6a35eee45c3b47ee229e"
+  }
+]

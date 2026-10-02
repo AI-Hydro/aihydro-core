@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "9d3068a8a7a66b63299b39efb9e2d129bde4b89cfd136ea09f8cc5b13d814c35",
+      "size": 52
+    },
+    {
+      "path": "data/served_streamflow_x.csv",
+      "sha256": "9c4960fc26d973380d73ddfdea3459dbf08d88c2e460ac9a7285638d33e436ee",
+      "size": 56
+    },
+    {
+      "path": "data/streamflow_x.json",
+      "sha256": "86c002aceaa752caad0a731e8a52f7b5204c6ebb6dfe78ed3881a99fa765f57d",
+      "size": 47
+    },
+    {
+      "path": "records/claim_revisions.json",
+      "sha256": "725b6dbe25d5b07565600e936b2d23efacee5da8a38b3b47ea34a2fba8d5a267",
+      "size": 4267
+    },
+    {
+      "path": "run_log.json",
+      "sha256": "3f4fba03314d2f4a989f251f314a74555a21e7e874399e54446a8778d37950f5",
+      "size": 14053
+    },
+    {
+      "path": "session.json",
+      "sha256": "fb3c853a30ccc8863bcb59b3c26408a2148ce0978bf004111fa748ecb0240ee1",
+      "size": 601
+    }
+  ],
+  "n_files": 6,
+  "recomputation": "not_performed",
+  "replay_status": "archive_integrity"
+}

@@ -1,0 +1,387 @@
+{
+  "claim.1": {
+    "key_outputs": {},
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "entry_digest": "sha256:78235b7bc615c2b44f5e79c393c8f7ddceb8ec5066d8b5271a2f5a2d46a8997a"
+      },
+      "input_digest": "sha256:64afd3bf0ccac750da1bb6c7f2cb7fa3faff6c2923a319ff6a9d86027692f862",
+      "input_refs": [],
+      "output_digest": "sha256:e6b4e2ea2896c6366c7096ba866eac7badfa22b3bdce60320a61c50d9c62a7a2",
+      "parents": [],
+      "record_digest": "sha256:751651a7a94d79fa4ccd7d492644849643b002cb07bb6f90d26c8b86cbb92802",
+      "recorded_at": "2026-10-03T10:00:05.000001Z",
+      "run_id": "claim.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "ok",
+      "tool": "add_claim",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "claim.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:05.000001Z",
+    "tool_name": "add_claim"
+  },
+  "promo.1": {
+    "error": true,
+    "error_summary": "APPROVAL_REQUIRED",
+    "key_outputs": {},
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "entry_digest": "sha256:b49298c3d07af63c98f9e0f52ccb689487f785ff1b615cca7eac2e4ff2bdc5da"
+      },
+      "input_digest": "sha256:959afeb77f10e7b3a601420cf788e6c8c038e1e3191dfcc96149afd02d4040f5",
+      "input_refs": [],
+      "output_digest": "sha256:6b8a61708597f3b3ca0c948ad713c649c10cbeb38d13e81f93b438a5b12f5f81",
+      "parents": [],
+      "record_digest": "sha256:3766e948afe8b62c23ce57cc4a8aa2de82a913054aa667df28c4e39f85e04b33",
+      "recorded_at": "2026-10-03T10:00:06.000001Z",
+      "run_id": "promo.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "error",
+      "tool": "promote_claim_to_registry",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "promo.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:06.000001Z",
+    "tool_name": "promote_claim_to_registry"
+  },
+  "q.1": {
+    "evidence": {
+      "data": {
+        "n_days": 3
+      },
+      "schema_version": 1,
+      "uncertainty": null
+    },
+    "key_outputs": {},
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "entry_digest": "sha256:dce58d6e3ffc3b3708495dbcc563377a33dbe88b35858f472c3d8405b0158397",
+        "retained_files": [
+          {
+            "digest": "sha256:86c002aceaa752caad0a731e8a52f7b5204c6ebb6dfe78ed3881a99fa765f57d",
+            "path": "session-data:x.data.streamflow_x.json",
+            "role": "artifact"
+          }
+        ],
+        "writer": "post_run"
+      },
+      "input_digest": "sha256:761a624ba781796d8cafdca4db52d341d81b3618aab5d90ffea1e73328e47894",
+      "input_refs": [],
+      "output_digest": "sha256:313533f0c8d405bc97912c3e7f5ccb4ff26fb41e4ef1b14c562f5736f46f353a",
+      "parents": [],
+      "record_digest": "sha256:d14afdfd3029ece70e59b38b200d6e01d777cc4ceca8bef20cccb1a33ce5939d",
+      "recorded_at": "2026-10-03T10:00:03.000101Z",
+      "run_id": "q.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "ok",
+      "tool": "fetch_streamflow_data",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "q.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:03.000101Z",
+    "tool_name": "fetch_streamflow_data"
+  },
+  "signatures.1": {
+    "evidence": {
+      "data": {
+        "baseflow_index": 0.5853970180143581
+      },
+      "schema_version": 1,
+      "uncertainty": {
+        "baseflow_index": {
+          "block_size": 365,
+          "ci_high": 0.5987070972165335,
+          "ci_level": 0.9,
+          "ci_low": 0.5714594819304801,
+          "method": "bootstrap_block",
+          "n": 7305,
+          "scope": "sampling_variability_of_ratio; excludes filter and observation uncertainty",
+          "value": 0.5853970180143581
+        }
+      }
+    },
+    "key_outputs": {},
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "call_run_id": "sigs.1",
+        "entry_digest": "sha256:c5c1edfb1887f6470f678cb717a28bdd0e78f06b2cfadcc1f4a7d0f5b4b9e0f7",
+        "internal_acquisitions": [
+          {
+            "mode": "internal_aihydro_data_fetch",
+            "role": "precipitation",
+            "sources_cited_by_result": [
+              "USGS NWIS",
+              "aihydro-data precipitation router (GridMET)"
+            ]
+          }
+        ],
+        "writer": "put_result"
+      },
+      "input_digest": "sha256:ca6cacb5c44d372ce7389889285c850cb01643aa7b295fa8a27da20c9e6a35ef",
+      "input_refs": [
+        {
+          "digest": "sha256:313533f0c8d405bc97912c3e7f5ccb4ff26fb41e4ef1b14c562f5736f46f353a",
+          "ref": "streamflow.1",
+          "role": "served_data"
+        },
+        {
+          "digest": "sha256:141fe1b73e4a9ea12801d2e9887530c283e1007e88a3674626ae78094b65ef42",
+          "ref": "streamflow.1#q_cms",
+          "role": "served_data"
+        },
+        {
+          "digest": "sha256:86c002aceaa752caad0a731e8a52f7b5204c6ebb6dfe78ed3881a99fa765f57d",
+          "ref": "session-data:x.data.streamflow_x.json",
+          "role": "served_data"
+        }
+      ],
+      "output_digest": "sha256:802f7352d589f9ee4e2be13cdbccba9f3df44272deb8ccf72ce6376762d76756",
+      "parents": [
+        "streamflow.1"
+      ],
+      "record_digest": "sha256:7af8926aaf92ce7db732e0a835525780709f1cfee5aab56d49e4be3209e0fff2",
+      "recorded_at": "2026-10-03T10:00:04.000001Z",
+      "run_id": "signatures.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "ok",
+      "tool": "extract_hydrological_signatures",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "signatures.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:04.000001Z",
+    "tool_name": "extract_hydrological_signatures"
+  },
+  "sigs.1": {
+    "evidence": {
+      "data": {
+        "baseflow_index": 0.5853970180143581
+      },
+      "schema_version": 1,
+      "uncertainty": {
+        "baseflow_index": {
+          "block_size": 365,
+          "ci_high": 0.5987070972165335,
+          "ci_level": 0.9,
+          "ci_low": 0.5714594819304801,
+          "method": "bootstrap_block",
+          "n": 7305,
+          "scope": "sampling_variability_of_ratio; excludes filter and observation uncertainty",
+          "value": 0.5853970180143581
+        }
+      }
+    },
+    "key_outputs": {},
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "entry_digest": "sha256:4e47c5b9ae6ecff41e635de575b713d0feeba25350302afdaf1c88085707bb56",
+        "internal_acquisitions": [
+          {
+            "mode": "internal_aihydro_data_fetch",
+            "role": "precipitation",
+            "sources_cited_by_result": [
+              "USGS NWIS",
+              "aihydro-data precipitation router (GridMET)"
+            ]
+          }
+        ],
+        "writer": "post_run"
+      },
+      "input_digest": "sha256:19d7a5217a61e479daaa314491926ad71389654f2c299855622e9f5312cb2024",
+      "input_refs": [
+        {
+          "digest": "sha256:313533f0c8d405bc97912c3e7f5ccb4ff26fb41e4ef1b14c562f5736f46f353a",
+          "ref": "streamflow.1",
+          "role": "served_data"
+        },
+        {
+          "digest": "sha256:141fe1b73e4a9ea12801d2e9887530c283e1007e88a3674626ae78094b65ef42",
+          "ref": "streamflow.1#q_cms",
+          "role": "served_data"
+        },
+        {
+          "digest": "sha256:86c002aceaa752caad0a731e8a52f7b5204c6ebb6dfe78ed3881a99fa765f57d",
+          "ref": "session-data:x.data.streamflow_x.json",
+          "role": "served_data"
+        }
+      ],
+      "output_digest": "sha256:802f7352d589f9ee4e2be13cdbccba9f3df44272deb8ccf72ce6376762d76756",
+      "parents": [
+        "streamflow.1"
+      ],
+      "record_digest": "sha256:c63254bf1baf427cb239f98f8ef73435abd8cb05ac7368a202bc17dd22baa782",
+      "recorded_at": "2026-10-03T10:00:04.000101Z",
+      "run_id": "sigs.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "ok",
+      "tool": "extract_hydrological_signatures",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "sigs.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:04.000101Z",
+    "tool_name": "extract_hydrological_signatures"
+  },
+  "start.1": {
+    "key_outputs": {},
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "entry_digest": "sha256:570dbbcfae92309802badcb8cf33b489c43399ffa94d0c5806693731ac16d24b"
+      },
+      "input_digest": "sha256:f9268b62f69ddcf71095ff4bf23e17ba5317552e26a4f0e5a2f68ad615313298",
+      "input_refs": [],
+      "output_digest": "sha256:41f2e5ddfcdb9c4e3861d8e8c17c4c54e35e0b403427b510e776759a95bc0269",
+      "parents": [],
+      "record_digest": "sha256:7c0446f1e799896a96ce1f407c8520cc8b7d6ba8b536bf581b37d982a9e58455",
+      "recorded_at": "2026-10-03T10:00:01.000001Z",
+      "run_id": "start.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "ok",
+      "tool": "start_session",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "start.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:01.000001Z",
+    "tool_name": "start_session"
+  },
+  "streamflow.1": {
+    "evidence": {
+      "data": {
+        "n_days": 3
+      },
+      "schema_version": 1,
+      "uncertainty": null
+    },
+    "key_outputs": {},
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "call_run_id": "q.1",
+        "entry_digest": "sha256:1d9baaabd9243a02b1a6201ed6c4c26a11205685a096afb20db01a2e3b1889b1",
+        "retained_files": [
+          {
+            "digest": "sha256:86c002aceaa752caad0a731e8a52f7b5204c6ebb6dfe78ed3881a99fa765f57d",
+            "path": "session-data:x.data.streamflow_x.json",
+            "role": "artifact"
+          }
+        ],
+        "writer": "put_result"
+      },
+      "input_digest": "sha256:7d3e3d0158468bcb724b8b874e960fc17cb9d1cbc9e96729d6dafd55daf1b4c6",
+      "input_refs": [],
+      "output_digest": "sha256:313533f0c8d405bc97912c3e7f5ccb4ff26fb41e4ef1b14c562f5736f46f353a",
+      "parents": [],
+      "record_digest": "sha256:6247200ba17a972b75516f6335c44f6ae7dcc26505df8914e44ae276d4e31be5",
+      "recorded_at": "2026-10-03T10:00:03.000001Z",
+      "run_id": "streamflow.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "ok",
+      "tool": "fetch_streamflow_data",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "streamflow.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:03.000001Z",
+    "tool_name": "fetch_streamflow_data"
+  },
+  "watershed.1": {
+    "key_outputs": {
+      "basin_ref": {
+        "aliases": 2,
+        "anchor": {
+          "element": "usgs:01013500",
+          "kind": "gauge_index",
+          "network": "nhdplusv2",
+          "network_version": "unversioned"
+        },
+        "area_km2": 2258.5163954900077,
+        "geometry_algorithm": "aihydro.geom/1",
+        "geometry_digest": "sha256:c19f8fcefce76767074c28d4cefcdf657030cfca31bf5d1cbbc8a5f6eb6756c6",
+        "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+        "method": "nldi_gauge_index",
+        "minted_by": {
+          "tool": "aihydro_watershed.identity.mint_basin_ref",
+          "version": "0.1.0"
+        },
+        "outlet": {
+          "aliases": [
+            {
+              "id": "01013500",
+              "relation": "same_as",
+              "scheme": "usgs",
+              "source": "nwis",
+              "verified": false
+            },
+            {
+              "id": "https://geoconnex.us/usgs/monitoring-location/01013500",
+              "relation": "same_as",
+              "scheme": "geoconnex",
+              "source": "constructed",
+              "verified": false
+            }
+          ],
+          "lat": 47.2375,
+          "lon": -68.58277778
+        },
+        "quality_flags": 2,
+        "schema": "aihydro.basin_ref/1"
+      }
+    },
+    "record": {
+      "canonicalization": "aihydro.c14n/1",
+      "env_digest": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "extra": {
+        "entry_digest": "sha256:f2c8f86c20dceef3b15548a7174edcc828b52c50656fa1973e9f22a7d92ae202"
+      },
+      "input_digest": "sha256:ced317f66215f496eb57e82f822abf2f1f3159c2419af2f2c6f0585b3ad1003c",
+      "input_refs": [],
+      "output_digest": "sha256:5e014495d0b0f5ede83b5da103cc0422d447d6b51e1bb4038aa0be462ff3cffa",
+      "parents": [],
+      "record_digest": "sha256:8ece7d4d25e5869cd30a800e8d1a39b00a2c4e6e9d7c88775505ee4469cec7a7",
+      "recorded_at": "2026-10-03T10:00:02.000001Z",
+      "run_id": "watershed.1",
+      "schema": "aihydro.run/2",
+      "session_id": "synthetic-session-1",
+      "status": "ok",
+      "tool": "delineate_watershed",
+      "tool_version": "2.1.0",
+      "version_source": "package"
+    },
+    "run_id": "watershed.1",
+    "session_id": "synthetic-session-1",
+    "timestamp": "2026-10-03T10:00:02.000001Z",
+    "tool_name": "delineate_watershed"
+  }
+}

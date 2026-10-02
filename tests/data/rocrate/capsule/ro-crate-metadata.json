@@ -1,0 +1,913 @@
+{
+  "@context": [
+    "https://w3id.org/ro/crate/1.3/context",
+    {
+      "aihydro": "https://ai-hydro.invalid/terms/0.1/",
+      "prov": "http://www.w3.org/ns/prov#",
+      "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
+    }
+  ],
+  "@graph": [
+    {
+      "@id": "#action-claim.1",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": "sha256:751651a7a94d79fa4ccd7d492644849643b002cb07bb6f90d26c8b86cbb92802",
+      "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
+      "endTime": "2026-10-03T10:00:05.000001Z",
+      "instrument": {
+        "@id": "#tool-add_claim%402.1.0"
+      },
+      "name": "add_claim",
+      "object": {
+        "@id": "#params-claim.1"
+      },
+      "result": {
+        "@id": "#output-claim.1"
+      }
+    },
+    {
+      "@id": "#action-export",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "The export step. It created or copied every file not produced by a recorded tool call. Its own run record, if one exists, is sealed after the capsule and is not part of this bundle.",
+      "endTime": "2026-10-03T12:00:00Z",
+      "instrument": {
+        "@id": "#tool-exporter"
+      },
+      "name": "Capsule export",
+      "result": [
+        {
+          "@id": "README.md"
+        },
+        {
+          "@id": "bundle.json"
+        },
+        {
+          "@id": "capsule_manifest.json"
+        },
+        {
+          "@id": "data/served_streamflow_x.csv"
+        },
+        {
+          "@id": "records/claim_revisions.json"
+        },
+        {
+          "@id": "replay.py"
+        },
+        {
+          "@id": "run_log.json"
+        },
+        {
+          "@id": "session.json"
+        }
+      ]
+    },
+    {
+      "@id": "#action-promo.1",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/FailedActionStatus",
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": "sha256:3766e948afe8b62c23ce57cc4a8aa2de82a913054aa667df28c4e39f85e04b33",
+      "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
+      "endTime": "2026-10-03T10:00:06.000001Z",
+      "error": "APPROVAL_REQUIRED",
+      "instrument": {
+        "@id": "#tool-promote_claim_to_registry%402.1.0"
+      },
+      "name": "promote_claim_to_registry",
+      "object": {
+        "@id": "#params-promo.1"
+      },
+      "result": {
+        "@id": "#output-promo.1"
+      }
+    },
+    {
+      "@id": "#action-q.1",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": [
+        "sha256:6247200ba17a972b75516f6335c44f6ae7dcc26505df8914e44ae276d4e31be5",
+        "sha256:d14afdfd3029ece70e59b38b200d6e01d777cc4ceca8bef20cccb1a33ce5939d"
+      ],
+      "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
+      "endTime": "2026-10-03T10:00:03.000101Z",
+      "instrument": {
+        "@id": "#tool-fetch_streamflow_data%402.1.0"
+      },
+      "name": "fetch_streamflow_data",
+      "object": {
+        "@id": "#params-q.1"
+      },
+      "result": [
+        {
+          "@id": "#output-q.1"
+        },
+        {
+          "@id": "data/streamflow_x.json"
+        }
+      ]
+    },
+    {
+      "@id": "#action-sigs.1",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": [
+        "sha256:7af8926aaf92ce7db732e0a835525780709f1cfee5aab56d49e4be3209e0fff2",
+        "sha256:c63254bf1baf427cb239f98f8ef73435abd8cb05ac7368a202bc17dd22baa782"
+      ],
+      "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
+      "endTime": "2026-10-03T10:00:04.000101Z",
+      "instrument": {
+        "@id": "#tool-extract_hydrological_signatures%402.1.0"
+      },
+      "name": "extract_hydrological_signatures",
+      "object": [
+        {
+          "@id": "#input-sigs.1-baac5d65"
+        },
+        {
+          "@id": "#output-q.1"
+        },
+        {
+          "@id": "#params-sigs.1"
+        },
+        {
+          "@id": "#source-aihydro-data-precipitation-router-gridme-4712902d"
+        },
+        {
+          "@id": "#source-usgs-nwis-f28e1813"
+        },
+        {
+          "@id": "data/streamflow_x.json"
+        }
+      ],
+      "prov:wasInformedBy": {
+        "@id": "#action-q.1"
+      },
+      "result": [
+        {
+          "@id": "#output-sigs.1"
+        },
+        {
+          "@id": "#stat-sigs.1-baseflow_index"
+        }
+      ]
+    },
+    {
+      "@id": "#action-start.1",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": "sha256:7c0446f1e799896a96ce1f407c8520cc8b7d6ba8b536bf581b37d982a9e58455",
+      "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
+      "endTime": "2026-10-03T10:00:01.000001Z",
+      "instrument": {
+        "@id": "#tool-start_session%402.1.0"
+      },
+      "name": "start_session",
+      "object": {
+        "@id": "#params-start.1"
+      },
+      "result": {
+        "@id": "#output-start.1"
+      }
+    },
+    {
+      "@id": "#action-watershed.1",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": "sha256:8ece7d4d25e5869cd30a800e8d1a39b00a2c4e6e9d7c88775505ee4469cec7a7",
+      "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
+      "endTime": "2026-10-03T10:00:02.000001Z",
+      "instrument": {
+        "@id": "#tool-delineate_watershed%402.1.0"
+      },
+      "name": "delineate_watershed",
+      "object": {
+        "@id": "#params-watershed.1"
+      },
+      "result": {
+        "@id": "#output-watershed.1"
+      }
+    },
+    {
+      "@id": "#alias-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-geoconnex-1",
+      "@type": "PropertyValue",
+      "description": "relation=same_as; source=constructed; verified=false; unverified, so not asserted as sameAs",
+      "name": "geoconnex identifier",
+      "propertyID": "geoconnex",
+      "value": "https://geoconnex.us/usgs/monitoring-location/01013500"
+    },
+    {
+      "@id": "#alias-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-usgs-0",
+      "@type": "PropertyValue",
+      "description": "relation=same_as; source=nwis; verified=false; unverified, so not asserted as sameAs",
+      "name": "usgs identifier",
+      "propertyID": "usgs",
+      "value": "01013500"
+    },
+    {
+      "@id": "#assess-replay",
+      "@type": "AssessAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "Self-assessed by the exporter at export time, not by an independent party. Level archive_integrity: 12 of 12 sealed records verified. Complete. This is an integrity check; nothing was recomputed. Integrity is not origin: digests and seals show that content is unchanged since it was sealed; they do not establish who produced it.",
+      "endTime": "2026-10-03T12:00:00Z",
+      "instrument": {
+        "@id": "#tool-verifier"
+      },
+      "name": "Replay assessment",
+      "object": {
+        "@id": "./"
+      },
+      "result": [
+        {
+          "@id": "#replay-checked-level"
+        },
+        {
+          "@id": "#replay-coverage"
+        },
+        {
+          "@id": "#replay-level"
+        },
+        {
+          "@id": "#replay-manifest-level"
+        }
+      ]
+    },
+    {
+      "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+      "@type": "Place",
+      "additionalProperty": [
+        {
+          "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-area_km2"
+        },
+        {
+          "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-geometry_digest"
+        },
+        {
+          "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-method"
+        },
+        {
+          "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-quality_flags"
+        }
+      ],
+      "aihydro:recordDigest": "sha256:57642f0def1bdcc6e8821a080c959ad0c5190d31c97655ecaa7ca44dca9a7a2a",
+      "aihydro:recordLocation": "run_log.json#/watershed.1/key_outputs/basin_ref",
+      "containsPlace": {
+        "@id": "#outlet-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
+      },
+      "identifier": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+      "name": "Basin anchored at usgs:01013500"
+    },
+    {
+      "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-area_km2",
+      "@type": "PropertyValue",
+      "name": "area_km2",
+      "propertyID": "area_km2",
+      "value": 2258.5163954900077
+    },
+    {
+      "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-geometry_digest",
+      "@type": "PropertyValue",
+      "name": "geometry digest",
+      "propertyID": "geometry_digest",
+      "value": "sha256:c19f8fcefce76767074c28d4cefcdf657030cfca31bf5d1cbbc8a5f6eb6756c6"
+    },
+    {
+      "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-method",
+      "@type": "PropertyValue",
+      "name": "delineation method",
+      "propertyID": "method",
+      "value": "nldi_gauge_index"
+    },
+    {
+      "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-quality_flags",
+      "@type": "PropertyValue",
+      "description": "Count of quality flags recorded on the basin reference; the flags are in the run record.",
+      "name": "quality flags",
+      "propertyID": "quality_flags",
+      "value": 2
+    },
+    {
+      "@id": "#block_size-sigs.1-baseflow_index",
+      "@type": "PropertyValue",
+      "name": "block_size",
+      "propertyID": "block_size",
+      "value": 365
+    },
+    {
+      "@id": "#ci-sigs.1-baseflow_index",
+      "@type": "PropertyValue",
+      "additionalProperty": [
+        {
+          "@id": "#block_size-sigs.1-baseflow_index"
+        },
+        {
+          "@id": "#cl-sigs.1-baseflow_index"
+        },
+        {
+          "@id": "#n-sigs.1-baseflow_index"
+        }
+      ],
+      "additionalType": "http://purl.obolibrary.org/obo/STATO_0000196",
+      "description": "sampling_variability_of_ratio; excludes filter and observation uncertainty",
+      "maxValue": 0.5987070972165335,
+      "minValue": 0.5714594819304801,
+      "name": "confidence interval"
+    },
+    {
+      "@id": "#cl-sigs.1-baseflow_index",
+      "@type": "PropertyValue",
+      "name": "confidence level",
+      "propertyID": "http://purl.obolibrary.org/obo/STATO_0000561",
+      "value": 0.9
+    },
+    {
+      "@id": "#claim-bfi-test-claim-rev0",
+      "@type": "Claim",
+      "additionalProperty": {
+        "@id": "#claim-bfi-test-claim-rev0-basis"
+      },
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": "sha256:7e62eeed3b4b4e211560ee19c184cd11aadcfa94831c2d23a415e1a637eaaca6",
+      "aihydro:recordLocation": "records/claim_revisions.json#/0",
+      "creativeWorkStatus": "draft",
+      "dateModified": "2026-10-03T10:00:05.500000Z",
+      "name": "Claim bfi-test-claim revision 0",
+      "prov:wasDerivedFrom": {
+        "@id": "#stat-sigs.1-baseflow_index"
+      },
+      "spatialCoverage": {
+        "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
+      },
+      "text": "The baseflow index is 0.585 (90% CI 0.571-0.599).",
+      "version": 0
+    },
+    {
+      "@id": "#claim-bfi-test-claim-rev0-basis",
+      "@type": "PropertyValue",
+      "description": "Projected from a sealed, append-only claim revision record.",
+      "name": "claim basis",
+      "propertyID": "claimBasis",
+      "value": "sealed_revision"
+    },
+    {
+      "@id": "#claim-bfi-test-claim-rev1",
+      "@type": "Claim",
+      "additionalProperty": {
+        "@id": "#claim-bfi-test-claim-rev1-basis"
+      },
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": "sha256:2996dba4af143609c734bf96ae9ae1b5a69d52d08163eda5e1f34c2fa209c97c",
+      "aihydro:recordLocation": "records/claim_revisions.json#/1",
+      "creativeWorkStatus": "supported",
+      "dateModified": "2026-10-03T10:00:06.500000Z",
+      "name": "Claim bfi-test-claim revision 1",
+      "prov:wasDerivedFrom": {
+        "@id": "#stat-sigs.1-baseflow_index"
+      },
+      "prov:wasRevisionOf": {
+        "@id": "#claim-bfi-test-claim-rev0"
+      },
+      "spatialCoverage": {
+        "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
+      },
+      "text": "The baseflow index is 0.585 (90% CI 0.571-0.599).",
+      "version": 1
+    },
+    {
+      "@id": "#claim-bfi-test-claim-rev1-basis",
+      "@type": "PropertyValue",
+      "description": "Projected from a sealed, append-only claim revision record.",
+      "name": "claim basis",
+      "propertyID": "claimBasis",
+      "value": "sealed_revision"
+    },
+    {
+      "@id": "#claim-bfi-test-claim-rev2",
+      "@type": "Claim",
+      "additionalProperty": {
+        "@id": "#claim-bfi-test-claim-rev2-basis"
+      },
+      "aihydro:canonicalization": "aihydro.c14n/1",
+      "aihydro:recordDigest": "sha256:0e4ef587cbec189e61cd56f3fc459afef2391a81df2d928db8426ae3cc65e417",
+      "aihydro:recordLocation": "records/claim_revisions.json#/2",
+      "creativeWorkStatus": "supported",
+      "dateModified": "2026-10-03T10:00:07.500000Z",
+      "name": "Claim bfi-test-claim revision 2",
+      "prov:wasDerivedFrom": {
+        "@id": "#stat-sigs.1-baseflow_index"
+      },
+      "prov:wasRevisionOf": {
+        "@id": "#claim-bfi-test-claim-rev1"
+      },
+      "spatialCoverage": {
+        "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
+      },
+      "text": "The baseflow index is 0.585 (90% CI 0.571-0.599).",
+      "version": 2
+    },
+    {
+      "@id": "#claim-bfi-test-claim-rev2-basis",
+      "@type": "PropertyValue",
+      "description": "Projected from a sealed, append-only claim revision record.",
+      "name": "claim basis",
+      "propertyID": "claimBasis",
+      "value": "sealed_revision"
+    },
+    {
+      "@id": "#claim-bfi-test-claim-view",
+      "@type": "Claim",
+      "additionalProperty": {
+        "@id": "#claim-bfi-test-claim-view-basis"
+      },
+      "creativeWorkStatus": "supported",
+      "description": "Working view, unsealed. The status shown is the session's current value, not a sealed one.",
+      "name": "Claim bfi-test-claim (working view, unsealed)",
+      "prov:wasDerivedFrom": {
+        "@id": "#stat-sigs.1-baseflow_index"
+      },
+      "spatialCoverage": {
+        "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
+      },
+      "text": "The baseflow index is 0.585 (90% CI 0.571-0.599)."
+    },
+    {
+      "@id": "#claim-bfi-test-claim-view-basis",
+      "@type": "PropertyValue",
+      "description": "Working view, unsealed: copied from the mutable session; its text and status may change and carry no seal.",
+      "name": "claim basis",
+      "propertyID": "claimBasis",
+      "value": "working_view_unsealed"
+    },
+    {
+      "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c",
+      "@type": "PropertyValue",
+      "description": "Digest of the recorded environment fingerprint (python, platform, distributions); the fingerprint is in capsule_manifest.json.",
+      "name": "environment digest",
+      "propertyID": "env_digest",
+      "value": "sha256:b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
+    },
+    {
+      "@id": "#input-sigs.1-baac5d65",
+      "@type": "PropertyValue",
+      "description": "Input reference (role served_data); digest only, not carried.",
+      "name": "streamflow.1#q_cms",
+      "propertyID": "input_digest",
+      "value": "sha256:141fe1b73e4a9ea12801d2e9887530c283e1007e88a3674626ae78094b65ef42"
+    },
+    {
+      "@id": "#license-unspecified",
+      "@type": "CreativeWork",
+      "description": "The exporter did not select a licence for this crate; per-file licences, where known, are on the File entities.",
+      "name": "No licence selected by exporter"
+    },
+    {
+      "@id": "#n-sigs.1-baseflow_index",
+      "@type": "PropertyValue",
+      "name": "n",
+      "propertyID": "n",
+      "value": 7305
+    },
+    {
+      "@id": "#outlet-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+      "@type": "Place",
+      "geo": {
+        "@id": "#outlet-geo-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
+      },
+      "identifier": [
+        {
+          "@id": "#alias-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-geoconnex-1"
+        },
+        {
+          "@id": "#alias-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-usgs-0"
+        }
+      ],
+      "name": "Outlet of basin aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
+    },
+    {
+      "@id": "#outlet-geo-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+      "@type": "GeoCoordinates",
+      "latitude": 47.2375,
+      "longitude": -68.58277778
+    },
+    {
+      "@id": "#output-claim.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the canonical output (aihydro.c14n/1). The output itself is not carried in this crate.",
+      "name": "output of add_claim",
+      "propertyID": "output_digest",
+      "value": "sha256:e6b4e2ea2896c6366c7096ba866eac7badfa22b3bdce60320a61c50d9c62a7a2"
+    },
+    {
+      "@id": "#output-promo.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the canonical output (aihydro.c14n/1). The output itself is not carried in this crate.",
+      "name": "output of promote_claim_to_registry",
+      "propertyID": "output_digest",
+      "value": "sha256:6b8a61708597f3b3ca0c948ad713c649c10cbeb38d13e81f93b438a5b12f5f81"
+    },
+    {
+      "@id": "#output-q.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the canonical output (aihydro.c14n/1). The output itself is not carried in this crate.",
+      "name": "output of fetch_streamflow_data",
+      "propertyID": "output_digest",
+      "value": "sha256:313533f0c8d405bc97912c3e7f5ccb4ff26fb41e4ef1b14c562f5736f46f353a"
+    },
+    {
+      "@id": "#output-sigs.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the canonical output (aihydro.c14n/1). The output itself is not carried in this crate.",
+      "name": "output of extract_hydrological_signatures",
+      "propertyID": "output_digest",
+      "value": "sha256:802f7352d589f9ee4e2be13cdbccba9f3df44272deb8ccf72ce6376762d76756"
+    },
+    {
+      "@id": "#output-start.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the canonical output (aihydro.c14n/1). The output itself is not carried in this crate.",
+      "name": "output of start_session",
+      "propertyID": "output_digest",
+      "value": "sha256:41f2e5ddfcdb9c4e3861d8e8c17c4c54e35e0b403427b510e776759a95bc0269"
+    },
+    {
+      "@id": "#output-watershed.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the canonical output (aihydro.c14n/1). The output itself is not carried in this crate.",
+      "name": "output of delineate_watershed",
+      "propertyID": "output_digest",
+      "value": "sha256:5e014495d0b0f5ede83b5da103cc0422d447d6b51e1bb4038aa0be462ff3cffa"
+    },
+    {
+      "@id": "#params-claim.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the call parameters; the parameter values are not carried in this crate.",
+      "name": "parameters of add_claim",
+      "propertyID": "input_digest",
+      "value": "sha256:64afd3bf0ccac750da1bb6c7f2cb7fa3faff6c2923a319ff6a9d86027692f862"
+    },
+    {
+      "@id": "#params-promo.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the call parameters; the parameter values are not carried in this crate.",
+      "name": "parameters of promote_claim_to_registry",
+      "propertyID": "input_digest",
+      "value": "sha256:959afeb77f10e7b3a601420cf788e6c8c038e1e3191dfcc96149afd02d4040f5"
+    },
+    {
+      "@id": "#params-q.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the call parameters; the parameter values are not carried in this crate.",
+      "name": "parameters of fetch_streamflow_data",
+      "propertyID": "input_digest",
+      "value": "sha256:761a624ba781796d8cafdca4db52d341d81b3618aab5d90ffea1e73328e47894"
+    },
+    {
+      "@id": "#params-sigs.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the call parameters; the parameter values are not carried in this crate.",
+      "name": "parameters of extract_hydrological_signatures",
+      "propertyID": "input_digest",
+      "value": "sha256:19d7a5217a61e479daaa314491926ad71389654f2c299855622e9f5312cb2024"
+    },
+    {
+      "@id": "#params-start.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the call parameters; the parameter values are not carried in this crate.",
+      "name": "parameters of start_session",
+      "propertyID": "input_digest",
+      "value": "sha256:f9268b62f69ddcf71095ff4bf23e17ba5317552e26a4f0e5a2f68ad615313298"
+    },
+    {
+      "@id": "#params-watershed.1",
+      "@type": "PropertyValue",
+      "description": "Digest of the call parameters; the parameter values are not carried in this crate.",
+      "name": "parameters of delineate_watershed",
+      "propertyID": "input_digest",
+      "value": "sha256:ced317f66215f496eb57e82f822abf2f1f3159c2419af2f2c6f0585b3ad1003c"
+    },
+    {
+      "@id": "#replay-checked-level",
+      "@type": "PropertyValue",
+      "description": "Level the exporter re-verified while building.",
+      "name": "checked replay status",
+      "propertyID": "checkedStatus",
+      "value": "archive_integrity"
+    },
+    {
+      "@id": "#replay-coverage",
+      "@type": "PropertyValue",
+      "description": "12 of 12 sealed records verified",
+      "maxValue": 12,
+      "name": "record coverage",
+      "propertyID": "records_verified",
+      "value": 12
+    },
+    {
+      "@id": "#replay-level",
+      "@type": "PropertyValue",
+      "description": "Strongest replay level the exporter actually performed.",
+      "name": "replay status",
+      "propertyID": "replayStatus",
+      "value": "archive_integrity"
+    },
+    {
+      "@id": "#replay-manifest-level",
+      "@type": "PropertyValue",
+      "description": "Level the capsule manifest states.",
+      "name": "manifest replay status",
+      "propertyID": "manifestStatus",
+      "value": "archive_integrity"
+    },
+    {
+      "@id": "#source-aihydro-data-precipitation-router-gridme-4712902d",
+      "@type": "CreativeWork",
+      "description": "Source named by the sealed run record; request parameters are in the record's input digest.",
+      "name": "aihydro-data precipitation router (GridMET)"
+    },
+    {
+      "@id": "#source-usgs-nwis-f28e1813",
+      "@type": "CreativeWork",
+      "description": "Source named by the sealed run record; request parameters are in the record's input digest.",
+      "name": "USGS NWIS"
+    },
+    {
+      "@id": "#stat-sigs.1-baseflow_index",
+      "@type": "PropertyValue",
+      "description": "Value and interval taken from the evidence body bound to a sealed run record (aihydro.entry/1).",
+      "measurementMethod": "bootstrap_block",
+      "name": "baseflow_index",
+      "value": 0.5853970180143581,
+      "valueReference": {
+        "@id": "#ci-sigs.1-baseflow_index"
+      }
+    },
+    {
+      "@id": "#tool-add_claim%402.1.0",
+      "@type": "SoftwareApplication",
+      "additionalProperty": {
+        "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
+      },
+      "name": "add_claim",
+      "version": "2.1.0"
+    },
+    {
+      "@id": "#tool-delineate_watershed%402.1.0",
+      "@type": "SoftwareApplication",
+      "additionalProperty": {
+        "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
+      },
+      "name": "delineate_watershed",
+      "version": "2.1.0"
+    },
+    {
+      "@id": "#tool-exporter",
+      "@type": "SoftwareApplication",
+      "name": "aihydro-core test exporter",
+      "version": "0.2.4"
+    },
+    {
+      "@id": "#tool-extract_hydrological_signatures%402.1.0",
+      "@type": "SoftwareApplication",
+      "additionalProperty": {
+        "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
+      },
+      "name": "extract_hydrological_signatures",
+      "version": "2.1.0"
+    },
+    {
+      "@id": "#tool-fetch_streamflow_data%402.1.0",
+      "@type": "SoftwareApplication",
+      "additionalProperty": {
+        "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
+      },
+      "name": "fetch_streamflow_data",
+      "version": "2.1.0"
+    },
+    {
+      "@id": "#tool-promote_claim_to_registry%402.1.0",
+      "@type": "SoftwareApplication",
+      "additionalProperty": {
+        "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
+      },
+      "name": "promote_claim_to_registry",
+      "version": "2.1.0"
+    },
+    {
+      "@id": "#tool-start_session%402.1.0",
+      "@type": "SoftwareApplication",
+      "additionalProperty": {
+        "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
+      },
+      "name": "start_session",
+      "version": "2.1.0"
+    },
+    {
+      "@id": "#tool-verifier",
+      "@type": "SoftwareApplication",
+      "name": "aihydro-core test verifier",
+      "sha256": "fff3adf566fc9cee1243723eb5dca379ed2118d15a0367a012fc29e3f216dcab",
+      "version": "0.2.4"
+    },
+    {
+      "@id": "./",
+      "@type": "Dataset",
+      "aihydro:replayStatus": "archive_integrity",
+      "conformsTo": {
+        "@id": "https://w3id.org/ro/wfrun/process/0.6"
+      },
+      "datePublished": "2026-10-03T12:00:00Z",
+      "description": "Deterministic RO-Crate projection of a sealed AI-Hydro Bundle. Integrity is not origin: digests and seals show that content is unchanged since it was sealed; they do not establish who produced it. Replay level: archive_integrity (12 of 12 sealed records verified); see the replay assessment.",
+      "hasPart": [
+        {
+          "@id": "README.md"
+        },
+        {
+          "@id": "bundle.json"
+        },
+        {
+          "@id": "capsule_manifest.json"
+        },
+        {
+          "@id": "data/served_streamflow_x.csv"
+        },
+        {
+          "@id": "data/streamflow_x.json"
+        },
+        {
+          "@id": "records/claim_revisions.json"
+        },
+        {
+          "@id": "replay.py"
+        },
+        {
+          "@id": "run_log.json"
+        },
+        {
+          "@id": "session.json"
+        }
+      ],
+      "identifier": "sha256:349f4bafbf8d9f6d229738e88c7960d0192e4a58874c641706e702670b366cce",
+      "license": {
+        "@id": "#license-unspecified"
+      },
+      "mentions": [
+        {
+          "@id": "#action-claim.1"
+        },
+        {
+          "@id": "#action-export"
+        },
+        {
+          "@id": "#action-promo.1"
+        },
+        {
+          "@id": "#action-q.1"
+        },
+        {
+          "@id": "#action-sigs.1"
+        },
+        {
+          "@id": "#action-start.1"
+        },
+        {
+          "@id": "#action-watershed.1"
+        },
+        {
+          "@id": "#assess-replay"
+        }
+      ],
+      "name": "AI-Hydro evidence bundle for session synthetic-session-1"
+    },
+    {
+      "@id": "README.md",
+      "@type": "File",
+      "contentSize": "52",
+      "encodingFormat": "text/markdown",
+      "name": "README.md",
+      "sha256": "9d3068a8a7a66b63299b39efb9e2d129bde4b89cfd136ea09f8cc5b13d814c35"
+    },
+    {
+      "@id": "bundle.json",
+      "@type": "File",
+      "contentSize": "7055",
+      "encodingFormat": "application/json",
+      "name": "bundle.json",
+      "sha256": "6778e65931739f443445935f3a7e8d43272b42c34782654f56b2f8a4518791d0"
+    },
+    {
+      "@id": "capsule_manifest.json",
+      "@type": "File",
+      "contentSize": "1021",
+      "encodingFormat": "application/json",
+      "name": "capsule_manifest.json",
+      "sha256": "08ff2c9553fca6167b2b42fa96c7d690080050b81a5ed4dff831d9746ac39f60"
+    },
+    {
+      "@id": "data/served_streamflow_x.csv",
+      "@type": "File",
+      "contentSize": "56",
+      "encodingFormat": "text/csv",
+      "license": "CC0-1.0",
+      "name": "data/served_streamflow_x.csv",
+      "sha256": "9c4960fc26d973380d73ddfdea3459dbf08d88c2e460ac9a7285638d33e436ee"
+    },
+    {
+      "@id": "data/streamflow_x.json",
+      "@type": "File",
+      "contentSize": "47",
+      "encodingFormat": "application/json",
+      "license": "CC0-1.0",
+      "name": "data/streamflow_x.json",
+      "sha256": "86c002aceaa752caad0a731e8a52f7b5204c6ebb6dfe78ed3881a99fa765f57d"
+    },
+    {
+      "@id": "https://ai-hydro.invalid/terms/0.1/canonicalization",
+      "@type": "rdf:Property",
+      "description": "Name of the canonical encoding that the accompanying digest was computed under (for example aihydro.c14n/1, RFC 8785 JCS after tagging).",
+      "name": "Canonicalization",
+      "rdfs:comment": "Name of the canonical encoding that the accompanying digest was computed under (for example aihydro.c14n/1, RFC 8785 JCS after tagging). Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
+      "rdfs:label": "Canonicalization"
+    },
+    {
+      "@id": "https://ai-hydro.invalid/terms/0.1/recordDigest",
+      "@type": "rdf:Property",
+      "description": "sha256:<hex> seal of the sealed AI-Hydro record this entity was projected from. Re-verify it against the record, not against this crate.",
+      "name": "Record digest",
+      "rdfs:comment": "sha256:<hex> seal of the sealed AI-Hydro record this entity was projected from. Re-verify it against the record, not against this crate. Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
+      "rdfs:label": "Record digest"
+    },
+    {
+      "@id": "https://ai-hydro.invalid/terms/0.1/recordLocation",
+      "@type": "rdf:Property",
+      "description": "Where the sealed record lives in this crate: relative file path, '#', then an RFC 6901 JSON Pointer (with ~0/~1 escaping).",
+      "name": "Record location",
+      "rdfs:comment": "Where the sealed record lives in this crate: relative file path, '#', then an RFC 6901 JSON Pointer (with ~0/~1 escaping). Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
+      "rdfs:label": "Record location"
+    },
+    {
+      "@id": "https://ai-hydro.invalid/terms/0.1/replayStatus",
+      "@type": "rdf:Property",
+      "description": "Strongest level of replay the exporter actually performed: not_performed, archive_integrity, cross_check, recomputed or independently_replicated. Integrity checks are never presented as recomputation.",
+      "name": "Replay status",
+      "rdfs:comment": "Strongest level of replay the exporter actually performed: not_performed, archive_integrity, cross_check, recomputed or independently_replicated. Integrity checks are never presented as recomputation. Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
+      "rdfs:label": "Replay status"
+    },
+    {
+      "@id": "https://w3id.org/ro/wfrun/process/0.6",
+      "@type": "CreativeWork",
+      "name": "Process Run Crate",
+      "version": "0.6"
+    },
+    {
+      "@id": "records/claim_revisions.json",
+      "@type": "File",
+      "contentSize": "4267",
+      "encodingFormat": "application/json",
+      "name": "records/claim_revisions.json",
+      "sha256": "725b6dbe25d5b07565600e936b2d23efacee5da8a38b3b47ea34a2fba8d5a267"
+    },
+    {
+      "@id": "replay.py",
+      "@type": "File",
+      "contentSize": "53",
+      "encodingFormat": "text/x-python",
+      "name": "replay.py",
+      "sha256": "fff3adf566fc9cee1243723eb5dca379ed2118d15a0367a012fc29e3f216dcab"
+    },
+    {
+      "@id": "ro-crate-metadata.json",
+      "@type": "CreativeWork",
+      "about": {
+        "@id": "./"
+      },
+      "conformsTo": {
+        "@id": "https://w3id.org/ro/crate/1.3"
+      }
+    },
+    {
+      "@id": "run_log.json",
+      "@type": "File",
+      "contentSize": "14053",
+      "encodingFormat": "application/json",
+      "name": "run_log.json",
+      "sha256": "3f4fba03314d2f4a989f251f314a74555a21e7e874399e54446a8778d37950f5"
+    },
+    {
+      "@id": "session.json",
+      "@type": "File",
+      "contentSize": "601",
+      "encodingFormat": "application/json",
+      "name": "session.json",
+      "sha256": "fb3c853a30ccc8863bcb59b3c26408a2148ce0978bf004111fa748ecb0240ee1"
+    }
+  ]
+}

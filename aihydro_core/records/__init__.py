@@ -11,22 +11,6 @@ Legacy digests elsewhere in the ecosystem (16-hex ``param_hash`` /
 algorithms. They stay verifiable under their own tags and are never
 recomputed or mapped onto this format.
 """
-from aihydro_core.records.canonical import (
-    CANONICALIZATION,
-    DIGEST_PREFIX,
-    UnencodableError,
-    canonical_json,
-    digest,
-    digest_bytes,
-    digest_or_error,
-    is_digest,
-)
-from aihydro_core.records.claim import (
-    CLAIM_REVISION_SCHEMA,
-    ClaimRevision,
-    verify_chain,
-    verify_claim_revision_dict,
-)
 from aihydro_core.records.bundle import (
     BUNDLE_SCHEMA,
     GATE_CODES,
@@ -47,6 +31,22 @@ from aihydro_core.records.bundle import (
     split_location,
     unescape_pointer_token,
     verify_bundle_dict,
+)
+from aihydro_core.records.canonical import (
+    CANONICALIZATION,
+    DIGEST_PREFIX,
+    UnencodableError,
+    canonical_json,
+    digest,
+    digest_bytes,
+    digest_or_error,
+    is_digest,
+)
+from aihydro_core.records.claim import (
+    CLAIM_REVISION_SCHEMA,
+    ClaimRevision,
+    verify_chain,
+    verify_claim_revision_dict,
 )
 from aihydro_core.records.entry import (
     ENTRY_BINDING,

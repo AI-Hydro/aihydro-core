@@ -1,5 +1,17 @@
 # aihydro-core progress
 
+## 2026-10-03 — RO-Crate export (2040 slice 5 P5.2, branch `vision2040/slice5-core`, 0.2.4)
+
+- Added `aihydro_core.export`: `to_rocrate` (RO-Crate 1.3 + Process Run Crate 0.6, one
+  `CreateAction` per tool call, claims with explicit basis, statistics only from bound bodies,
+  replay `AssessAction` with coverage, aliases as outlet `identifier`s), `validate_crate`
+  (rule ids with spec clauses), `verify_crate` (regenerate-and-byte-compare, seals, bindings,
+  chains, BagIt manifest) and the `python -m aihydro_core.export.rocrate` CLI.
+- Golden synthetic capsule `tests/data/rocrate/capsule/` (byte-identical rebuild test); tamper
+  tests for data, record, body, crate, action, File id, bundle, revision chain, replay level and
+  path injection. Regenerate the golden only with `AIHYDRO_REGEN_GOLDEN=1`.
+- Namespace for the in-graph terms is unregistered (OPEN-8); no AI-Hydro `conformsTo`.
+
 ## 2026-10-03 — Bundle (2040 slice 5 P5.1, branch `vision2040/slice5-core`, 0.2.4)
 
 - Added `aihydro_core.records.bundle`: `Bundle` (`aihydro.bundle/1`). Identity is

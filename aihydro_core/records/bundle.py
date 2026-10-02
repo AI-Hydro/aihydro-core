@@ -45,7 +45,6 @@ import dataclasses
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from aihydro_core.records.canonical import CANONICALIZATION, digest, is_digest
-from aihydro_core.records.entry import ENTRY_BINDING
 from aihydro_core.records.replay import ReplayStatus
 from aihydro_core.records.run import utc_now
 

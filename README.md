@@ -59,11 +59,37 @@ program, ADR-001). It is stdlib-only.
   split first (`crosses_antimeridian` flags them). Golden vectors are in
   `tests/data/place_vectors.json`; `tests/data/place_crosscheck.js` re-derives
   them independently in Node.
+- `Bundle` (schema `aihydro.bundle/1`, `records/bundle.py`) is the sealed
+  identity of one session's evidence set: content-addressed `objects` plus
+  `records` located by JSON Pointer (`~0`/`~1` escaping). `bundle_id` covers
+  `{schema, session_id, objects, records}` only; assessments (`created_at`, the
+  replay level, record `coverage`, gates) sit in the sealed envelope. It points
+  at records and never copies them. `aihydro.entry/1` (`records/entry.py`) is the
+  generic body binding: the digest of a row minus its `record` key. Golden
+  vectors: `tests/data/entry_vectors.json`.
+- `ReplayStatus` stays at five values. Partial coverage is a separate
+  `coverage` record, not an enum member; `read_legacy_replay_status` maps the
+  persisted string `archive_integrity_partial` to
+  `(ARCHIVE_INTEGRITY, complete=False)`.
 - `environment_fingerprint(...)` describes the running interpreter, platform
   and named distributions.
 - `ReplayStatus` names what a replay established: `not_performed`,
   `archive_integrity`, `cross_check`, `recomputed` or
   `independently_replicated`.
+
+## RO-Crate export (`aihydro_core.export`)
+
+A deterministic projection of a sealed `Bundle` into an RO-Crate 1.3 /
+Process Run Crate 0.6 `ro-crate-metadata.json` (stdlib only; ADR-005).
+`to_rocrate(bundle, records, bodies, files, license=None)` builds it;
+`validate_crate(dir)` checks structural MUSTs plus honesty, claim-basis and
+privacy rules by id; `verify_crate(dir)` re-verifies every file digest and
+record seal, re-checks body bindings and claim chains, **regenerates** the crate
+from the bundle and byte-compares it with the shipped one. CLI:
+`python -m aihydro_core.export.rocrate {validate,verify} DIR` (nonzero exit on
+failure). The crate states that integrity is not origin. Its few AI-Hydro terms
+live under an **unregistered** namespace (`PROFILE_NS`, OPEN-8); the crate
+claims no AI-Hydro profile. Golden fixture: `tests/data/rocrate/capsule/`.
 
 Legacy 16-hex `content_hash`/`param_hash` values are a different algorithm.
 They remain valid as cache keys and are not mapped onto record digests.

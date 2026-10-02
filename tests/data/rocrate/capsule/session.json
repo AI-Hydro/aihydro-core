@@ -1,0 +1,25 @@
+{
+  "claims": {
+    "bfi-test-claim": {
+      "claim": "The baseflow index is 0.585 (90% CI 0.571-0.599).",
+      "evidence_spans": [
+        {
+          "metric_ref": "baseflow_index",
+          "source_id": "sigs.1",
+          "source_type": "run"
+        }
+      ],
+      "id": "bfi-test-claim",
+      "scope": {
+        "basin_refs": [
+          {
+            "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
+            "label": "01013500"
+          }
+        ]
+      },
+      "status": "supported"
+    }
+  },
+  "session_id": "synthetic-session-1"
+}

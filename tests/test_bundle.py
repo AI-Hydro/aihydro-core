@@ -8,10 +8,27 @@ from pathlib import Path
 import pytest
 
 from aihydro_core.records import (
-    ENTRY_BINDING, Bundle, BundleError, ReplayStatus, digest, entry_digest, escape_pointer_token,
-    make_binding, make_coverage, make_location, make_object_entry, make_pointer,
-    make_record_entry, min_replay_status, read_legacy_replay_status, replay_rank,
-    resolve_location, split_location, unescape_pointer_token, verify_binding, verify_bundle_dict,
+    ENTRY_BINDING,
+    Bundle,
+    BundleError,
+    ReplayStatus,
+    digest,
+    entry_digest,
+    escape_pointer_token,
+    make_binding,
+    make_coverage,
+    make_location,
+    make_object_entry,
+    make_pointer,
+    make_record_entry,
+    min_replay_status,
+    read_legacy_replay_status,
+    replay_rank,
+    resolve_location,
+    split_location,
+    unescape_pointer_token,
+    verify_binding,
+    verify_bundle_dict,
 )
 
 D = {c: "sha256:" + c * 64 for c in "abcdef"}
