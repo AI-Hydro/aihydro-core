@@ -10,6 +10,29 @@ Provides the single hashing and provenance vocabulary (`content_hash`, `param_ha
 stack so it can be safely depended on by any AI-Hydro package without pulling in numpy,
 pandas, or geo libraries.
 
+## Scientific records (`aihydro_core.records`)
+
+The canonical record contract for runs, evidence and bundles (AI-Hydro 2040
+program, ADR-001). It is stdlib-only.
+
+- `digest(obj)` returns a `sha256:<64 hex>` digest of a **strict** canonical
+  encoding (`aihydro.c14n/1`). Unknown types raise `UnencodableError` rather
+  than being stringified, so abbreviated reprs (large arrays, DataFrames) can
+  never alias. Non-finite floats, NumPy arrays and scalars, dates, bytes and
+  sets all have tagged, deterministic encodings.
+- `RunRecord` (schema `aihydro.run/2`) records a run's tool, version, input
+  and output digests, input references, parent runs, environment digest,
+  actor and an explicit `record_error`. `seal()` and `verify()` provide
+  tamper detection. Unknown fields round-trip unchanged.
+- `environment_fingerprint(...)` describes the running interpreter, platform
+  and named distributions.
+- `ReplayStatus` names what a replay established: `not_performed`,
+  `archive_integrity`, `cross_check`, `recomputed` or
+  `independently_replicated`.
+
+Legacy 16-hex `content_hash`/`param_hash` values are a different algorithm.
+They remain valid as cache keys and are not mapped onto record digests.
+
 ## Install
 
 ```bash

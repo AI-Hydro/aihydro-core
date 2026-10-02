@@ -10,3 +10,15 @@
 
 Re-ran the complete offline suite: 113 passed. Reviewed the numeric-array hashing
 repair and its regression tests for commit/push; no PyPI release requested.
+
+## 2026-10-02 — Canonical scientific records (2040 program slice 1, branch `vision2040/records-v2`)
+
+- Added `aihydro_core.records`:
+  - strict canonical JSON and `sha256:` digests;
+  - `RunRecord` with seal and verify;
+  - `Actor` and `ArtifactRef`;
+  - an environment fingerprint;
+  - `ReplayStatus`.
+- The module is stdlib-only, enforced by an AST import test.
+- `pytest -q`: 138 passed (113 existing + 25 new). `ruff check`: clean.
+- The work lives on a branch in a git worktree. It is not merged or released.

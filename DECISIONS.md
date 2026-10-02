@@ -4,6 +4,26 @@ Append-only. Newest first. One entry per non-obvious choice, with the **why**.
 
 ---
 
+## 2026-10-02 — Strict canonical records alongside legacy hashing
+
+**Decision.** Add `aihydro_core.records` with its own strict canonicalization
+(`aihydro.c14n/1`, full `sha256:` digests) and a sealed `RunRecord`. Leave
+`primitives.hashing` unchanged.
+
+**Why.** `content_hash` truncates to 16 hex characters and falls back to
+`str(value)` for unknown types. A DataFrame's abbreviated repr therefore
+aliases different data, the same failure class as the 2026-09-29 array fix.
+Changing `content_hash` in place would silently invalidate every persisted
+cache key. A provenance digest must refuse what it cannot encode. A cache key
+may be best-effort.
+
+**Alternative rejected.** Making `content_hash` strict was rejected because it
+breaks existing caches, and callers that hash arbitrary request payloads
+would start raising.
+
+**Reference.** AI-Hydro 2040 program ADR-001
+(`docs/vision-2040/adr/ADR-001-canonical-record-model.md` in the workspace root).
+
 ## 2026-09-29 — Full numeric-array bytes in content identities
 
 `content_hash` previously serialized a NumPy array through abbreviated `str()`,
