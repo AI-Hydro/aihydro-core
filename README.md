@@ -30,6 +30,13 @@ program, ADR-001). It is stdlib-only.
   unsophisticated modification. A seal proves **integrity, not origin**:
   anyone who can write the record can edit it and re-seal it. Origin needs a
   signature or an independent store. Unknown fields round-trip unchanged.
+- `ClaimRevision` (schema `aihydro.claim_revision_record/1`) is one sealed,
+  append-only revision of a claim: `session_id`, `claim_id`, `revision` (>= 0),
+  `supersedes` (the previous `revision_digest`), `revision_digest` (digest of
+  the authority fields, computed by the writer), `content`, `cause`
+  (`{tool, run_id?, reason}`), a required `actor`, `recorded_at` and
+  `record_digest`. `verify_chain()` checks a claim's whole chain. The same
+  integrity-not-origin caveat as `RunRecord` applies.
 - `environment_fingerprint(...)` describes the running interpreter, platform
   and named distributions.
 - `ReplayStatus` names what a replay established: `not_performed`,

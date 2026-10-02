@@ -4,6 +4,23 @@ Append-only. Newest first. One entry per non-obvious choice, with the **why**.
 
 ---
 
+## 2026-10-02 — ClaimRevision record (slice 2, P0; core 0.2.2)
+
+**Decision.** Add a stdlib `ClaimRevision` (`aihydro.claim_revision_record/1`)
+to `aihydro_core.records`. `revision_digest` is supplied by the writer, not
+computed in core; `supersedes` links to the previous `revision_digest`; `actor`
+is required; `cause.reason` is a free non-empty string so tools can extend it.
+
+**Why.** Claim authority (ADR-002) needs an append-only revision chain that
+approvals bind to. The digest of the authority fields already exists in tools
+(`aihydro.claim_revision/2`), and it must not be re-derived in two places.
+Core therefore seals rows and checks chains, and the writer owns the content
+digest.
+
+**Reference.** ADR-001, ADR-002; `docs/vision-2040/plans/slice-2.md`.
+
+---
+
 ## 2026-10-02 — Strict canonical records alongside legacy hashing
 
 **Decision.** Add `aihydro_core.records` with its own strict canonicalization

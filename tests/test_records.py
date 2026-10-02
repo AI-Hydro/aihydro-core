@@ -341,3 +341,94 @@ def test_golden_vectors_are_stable():
     for case in vectors["cases"]:
         assert canonical_json(case["input"]).decode("utf-8") == case["canonical"], case["name"]
         assert digest(case["input"]) == case["digest"], case["name"]
+
+
+# ---------------------------------------------------------------- ClaimRevision
+from aihydro_core.records import (  # noqa: E402
+    CLAIM_REVISION_SCHEMA,
+    ClaimRevision,
+    verify_chain,
+    verify_claim_revision_dict,
+)
+
+_ACTOR = {"kind": "agent", "id": "tools"}
+
+
+def _rev(n=0, supersedes=None, **kw):
+    base = dict(
+        session_id="s1", claim_id="c1", revision=n, supersedes=supersedes,
+        revision_digest=digest({"rev": n}),
+        content={"status": "draft", "n": n},
+        cause={"tool": "add_claim", "reason": "created"},
+        actor=_ACTOR,
+    )
+    base.update(kw)
+    return ClaimRevision(**base)
+
+
+def test_claim_revision_seal_verify_roundtrip():
+    r = _rev()
+    assert r.schema == CLAIM_REVISION_SCHEMA == "aihydro.claim_revision_record/1"
+    assert not r.verify()
+    r.seal()
+    assert r.verify() and is_digest(r.record_digest)
+    assert r.seal().record_digest == r.record_digest
+    assert verify_claim_revision_dict(r.to_dict())
+
+
+def test_claim_revision_tamper_detected():
+    r = _rev().seal()
+    d = r.to_dict()
+    d["content"] = {"status": "promoted"}
+    assert not verify_claim_revision_dict(d)
+    r.content["status"] = "promoted"
+    assert not r.verify()
+
+
+def test_claim_revision_unknown_fields_preserved():
+    d = _rev().seal().to_dict()
+    d["future_field"] = {"x": 1}
+    r2 = ClaimRevision.from_dict(d)
+    assert r2.verify() is False  # sealed digest did not cover the new field
+    d2 = _rev().to_dict()
+    d2["future_field"] = {"x": 1}
+    sealed = ClaimRevision.from_dict(d2).seal()
+    again = ClaimRevision.from_dict(sealed.to_dict())
+    assert again.verify() and again.to_dict()["future_field"] == {"x": 1}
+
+
+def test_claim_revision_validation():
+    for bad in (
+        dict(revision=-1),
+        dict(revision=True),
+        dict(revision_digest="abc"),
+        dict(supersedes=digest(1)),               # revision 0 cannot supersede
+        dict(content=[1]),
+        dict(cause={"tool": "t"}),
+        dict(cause={"reason": "r"}),
+        dict(cause={"tool": "t", "reason": "r", "run_id": ""}),
+        dict(actor={"kind": "robot", "id": "x"}),
+        dict(actor=None),
+        dict(session_id=""),
+    ):
+        with pytest.raises(ValueError):
+            _rev(**bad)
+    with pytest.raises(ValueError):
+        _rev(1)  # revision > 0 needs supersedes
+    _rev(cause={"tool": "t", "reason": "r", "run_id": "run-1"})
+
+
+def test_claim_revision_chain():
+    r0 = _rev(0).seal()
+    r1 = _rev(1, supersedes=r0.revision_digest).seal()
+    r2 = _rev(2, supersedes=r1.revision_digest).seal()
+    assert verify_chain([r0, r1, r2])
+    assert not verify_chain([])
+    assert not verify_chain([r0, r2])                       # gap
+    assert not verify_chain([r1, r0])                       # order
+    broken = _rev(2, supersedes=r0.revision_digest).seal()  # wrong link
+    assert not verify_chain([r0, r1, broken])
+    other = _rev(1, supersedes=r0.revision_digest, claim_id="c2").seal()
+    assert not verify_chain([r0, other])
+    r1.content["status"] = "x"                              # tamper
+    assert not verify_chain([r0, r1, r2])

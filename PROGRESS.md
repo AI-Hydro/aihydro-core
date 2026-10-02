@@ -1,5 +1,12 @@
 # aihydro-core progress
 
+## 2026-10-02 — ClaimRevision (2040 slice 2 P0, branch `vision2040/claim-revision`, 0.2.2)
+
+- Added `aihydro_core.records.claim`: `ClaimRevision` with seal, verify,
+  unknown-field round-trip, `verify_chain` and `verify_claim_revision_dict`.
+- Version bumped to 0.2.2. The stdlib-only guard test stays green.
+- `pytest -q`: 168 passed (138 + 30 new incl. existing guard). Not merged or released.
+
 ## 2026-09-29 — Numeric-array content identity hardening
 
 - Reproduced the reported large-array abbreviated-string collision from the September audit.
