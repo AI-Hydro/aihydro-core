@@ -1,0 +1,152 @@
+{
+ "binding": "aihydro.entry/1",
+ "note": "digest = aihydro.c14n/1 digest of the object minus its top-level 'record' key. Shared with the stdlib mirror in replay.py.",
+ "cases": [
+  {
+   "name": "empty",
+   "object": {},
+   "digest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  {
+   "name": "record_only",
+   "object": {
+    "record": {
+     "a": 1
+    }
+   },
+   "digest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "note": "digest of {} : the record key is excluded"
+  },
+  {
+   "name": "body_plus_record",
+   "object": {
+    "record": {
+     "run_id": "x"
+    },
+    "evidence": {
+     "v": 1.0,
+     "k": [
+      1,
+      2
+     ]
+    },
+    "tool_name": "t"
+   },
+   "digest": "sha256:c8fc04a10aa1954764660515ac3191d2c82daf9619e39041d126517984531f42"
+  },
+  {
+   "name": "no_record_key_digested_whole",
+   "object": {
+    "claim": "c",
+    "status": "supported",
+    "scope": {
+     "basins": [
+      "1"
+     ]
+    }
+   },
+   "digest": "sha256:356f3e8ea2901dbbf3d235c866ce7055cc2059dc142454ea73fe408d2441f865"
+  },
+  {
+   "name": "nested_record_key_kept",
+   "object": {
+    "record": {},
+    "evidence": {
+     "record": {
+      "kept": true
+     }
+    }
+   },
+   "digest": "sha256:4d5820987f479ce18e8211b6ff80b9568c38d5b51b6ffc92424aac4438eb8c41",
+   "note": "only the TOP-LEVEL record key is excluded"
+  },
+  {
+   "name": "unicode_and_numbers",
+   "object": {
+    "record": {},
+    "n": 9007199254740993,
+    "f": 1e+21,
+    "s": "é ~/"
+   },
+   "digest": "sha256:eae3f13d5b658e495ee04acea671164cd0574f16b685e5eb081a763341cbf6de"
+  },
+  {
+   "name": "real_e2e_row_start",
+   "object": {
+    "run_id": "start.20261002.e2eproo.274eab40",
+    "tool_name": "start_session",
+    "session_id": "e2e-proof-1-20261002T143200Z",
+    "timestamp": "2026-10-02T14:32:01.354259+00:00",
+    "key_outputs": {},
+    "minimal": true,
+    "record": {
+     "schema": "aihydro.run/2",
+     "canonicalization": "aihydro.c14n/1",
+     "run_id": "start.20261002.e2eproo.274eab40",
+     "tool": "start_session",
+     "tool_version": "2.1.0",
+     "version_source": "package",
+     "session_id": "e2e-proof-1-20261002T143200Z",
+     "recorded_at": "2026-10-02T14:32:01.364735Z",
+     "status": "ok",
+     "input_digest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+     "input_refs": [],
+     "output_digest": "sha256:178baf5c492026e7d2ee4c305342696b41a296677b43a8d47a9970fcd06c2295",
+     "parents": [],
+     "env_digest": "sha256:37dbed60de206036fee259bc1fe313fc20302cd5328dc6b5aed6e0b6542172f2",
+     "extra": {
+      "writer": "middleware",
+      "duration_ms": 636.7,
+      "mcp_client": "mcp/0.1.0",
+      "context_source": "none",
+      "session_resolution": "explicit_arg",
+      "entry": "minimal",
+      "entry_digest": "sha256:4f8cd9a7af7072571ccb4a877a1b9249144c97157faaeec79ea9b42858f5c817"
+     },
+     "record_digest": "sha256:0acc445fb227fc85633fd2ed11139b79f6595c1ce97f5bded0e632eadd6f95b4"
+    }
+   },
+   "digest": "sha256:4f8cd9a7af7072571ccb4a877a1b9249144c97157faaeec79ea9b42858f5c817",
+   "note": "real row from evidence/e2e-proof-1; equals record.extra.entry_digest"
+  },
+  {
+   "name": "real_e2e_row_claim",
+   "object": {
+    "run_id": "claim.20261002.e2eproo.35bfbedc",
+    "tool_name": "add_claim",
+    "session_id": "e2e-proof-1-20261002T143200Z",
+    "timestamp": "2026-10-02T14:32:04.506347+00:00",
+    "key_outputs": {},
+    "minimal": true,
+    "record": {
+     "schema": "aihydro.run/2",
+     "canonicalization": "aihydro.c14n/1",
+     "run_id": "claim.20261002.e2eproo.35bfbedc",
+     "tool": "add_claim",
+     "tool_version": "2.1.0",
+     "version_source": "package",
+     "session_id": "e2e-proof-1-20261002T143200Z",
+     "recorded_at": "2026-10-02T14:32:04.506668Z",
+     "status": "ok",
+     "input_digest": "sha256:782dc6ecac7a2121661628d86834098c2a82f409f394e7750373acbff4a1f14e",
+     "input_refs": [],
+     "output_digest": "sha256:fa28c6c6bc0414966039d124ab6d4bfc3a175d3da60c346cfb77cd47f3a47acc",
+     "parents": [],
+     "env_digest": "sha256:37dbed60de206036fee259bc1fe313fc20302cd5328dc6b5aed6e0b6542172f2",
+     "extra": {
+      "writer": "middleware",
+      "duration_ms": 12.6,
+      "mcp_client": "mcp/0.1.0",
+      "context_source": "none",
+      "session_resolution": "explicit_arg",
+      "entry": "minimal",
+      "entry_digest": "sha256:dbc559a074dde3b1235c19a36f40c023a8f7a5d8d6205c3b29a14cff213ee529"
+     },
+     "record_digest": "sha256:27442208f11222737598913fe67d97320e22ff0772743b412063ba8a3f2e9cfb"
+    }
+   },
+   "digest": "sha256:dbc559a074dde3b1235c19a36f40c023a8f7a5d8d6205c3b29a14cff213ee529",
+   "note": "real row from evidence/e2e-proof-1; equals record.extra.entry_digest"
+  }
+ ]
+}

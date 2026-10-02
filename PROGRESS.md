@@ -1,5 +1,20 @@
 # aihydro-core progress
 
+## 2026-10-03 — Bundle (2040 slice 5 P5.1, branch `vision2040/slice5-core`, 0.2.4)
+
+- Added `aihydro_core.records.bundle`: `Bundle` (`aihydro.bundle/1`). Identity is
+  `digest({schema, session_id, objects, records})` only (M6); `created_at`, the replay
+  assessment, record coverage, gates and tier sit in the sealed envelope. Unknown fields
+  round-trip. `records[]` entries carry JSON Pointer locations (`~0`/`~1` escaping rule
+  tested) and an optional body binding.
+- Added `aihydro_core.records.entry`: the generic `aihydro.entry/1` body binding (digest of an
+  object minus its `record` key) with golden vectors `tests/data/entry_vectors.json`.
+- `ReplayStatus` is unchanged (no `archive_integrity_partial`, R2). Added `REPLAY_ORDER`,
+  `replay_rank`, `min_replay_status` and `read_legacy_replay_status`, which maps the legacy
+  string to `(ARCHIVE_INTEGRITY, complete=False)`. Partiality is the Bundle `coverage` record.
+- Layering test extended: `aihydro_core.export` may import only stdlib + `aihydro_core.records`.
+- Interface summary for the tools packets: `docs/vision-2040/plans/slice-5-interfaces.md`.
+
 ## 2026-10-02 — Place identity (2040 slice 3 P1, branch `vision2040/place-core`, 0.2.3)
 
 - Added `aihydro_core.records.place`: `PlaceAlias`, `OutletRef`, `ReachRef`,
