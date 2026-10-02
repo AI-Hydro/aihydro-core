@@ -1,7 +1,6 @@
 """Place identity: aihydro.geom/1 invariances, BasinRef anchor id, golden vectors."""
 import copy
 import json
-import math
 from pathlib import Path
 
 import pytest

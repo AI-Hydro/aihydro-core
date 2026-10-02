@@ -15,7 +15,7 @@ not origin. Unknown fields from newer writers round-trip unchanged.
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from aihydro_core.records.canonical import CANONICALIZATION, digest, is_digest
 from aihydro_core.records.run import Actor, utc_now
