@@ -4,6 +4,17 @@ Append-only. Newest first. One entry per non-obvious choice, with the **why**.
 
 ---
 
+## 2026-09-29 — Full numeric-array bytes in content identities
+
+`content_hash` previously serialized a NumPy array through abbreviated `str()`,
+so distinct long arrays with equal visible edges had the same fingerprint.
+Encode full bytes, shape and dtype through the standard-library serializer
+without importing NumPy into the base package. This changes hash values for
+NumPy-containing objects; historical cache keys must be treated as different
+identities, not silently interpreted as canonical. Arbitrary pandas/user objects
+remain outside this narrow repair and need a separate versioned contract.
+
+
 ## 2026-06-19 — Result contract promoted into core, behind a lazy pydantic boundary
 
 **Decision.** The universal tool-output contract — `HydroResult`, `HydroMeta`,

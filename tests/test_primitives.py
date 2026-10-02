@@ -28,6 +28,25 @@ class TestHashing:
     def test_content_hash_differs(self):
         assert content_hash({"a": 1}) != content_hash({"a": 2})
 
+    def test_content_hash_full_numeric_array(self):
+        import numpy as np
+
+        first = np.zeros(2000)
+        second = first.copy()
+        second[1000] = 1.0
+        assert str(first) == str(second)  # NumPy's abbreviated display
+        assert content_hash(first) != content_hash(second)
+        assert content_hash({"data": first}) != content_hash({"data": second})
+        assert content_hash(first) == content_hash(first.copy())
+
+    def test_content_hash_array_shape_and_dtype(self):
+        import numpy as np
+
+        assert content_hash(np.array([1, 2], dtype="int32")) != content_hash(
+            np.array([1, 2], dtype="int64"))
+        assert content_hash(np.array([1, 2])) != content_hash(
+            np.array([[1, 2]]))
+
     def test_hash_is_16_chars(self):
         assert len(param_hash({"x": 1})) == 16
         assert len(content_hash({"x": 1})) == 16
