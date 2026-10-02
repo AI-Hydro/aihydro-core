@@ -16,14 +16,20 @@ The canonical record contract for runs, evidence and bundles (AI-Hydro 2040
 program, ADR-001). It is stdlib-only.
 
 - `digest(obj)` returns a `sha256:<64 hex>` digest of a **strict** canonical
-  encoding (`aihydro.c14n/1`). Unknown types raise `UnencodableError` rather
-  than being stringified, so abbreviated reprs (large arrays, DataFrames) can
-  never alias. Non-finite floats, NumPy arrays and scalars, dates, bytes and
-  sets all have tagged, deterministic encodings.
+  encoding (`aihydro.c14n/1`). This is a small Python tagging step followed by
+  the JSON Canonicalization Scheme (RFC 8785), so any JCS implementation, for
+  example in TypeScript, can verify digests. Golden vectors are in
+  `tests/data/c14n_vectors.json`. Unknown types raise `UnencodableError`
+  rather than being stringified, so abbreviated reprs (large arrays,
+  DataFrames) can never alias. Masked-array masks, structured-dtype field
+  names, big integers, non-finite floats, dates, bytes and sets all have
+  tagged, deterministic encodings.
 - `RunRecord` (schema `aihydro.run/2`) records a run's tool, version, input
   and output digests, input references, parent runs, environment digest,
-  actor and an explicit `record_error`. `seal()` and `verify()` provide
-  tamper detection. Unknown fields round-trip unchanged.
+  actor and an explicit `record_error`. `seal()` and `verify()` detect accidental or
+  unsophisticated modification. A seal proves **integrity, not origin**:
+  anyone who can write the record can edit it and re-seal it. Origin needs a
+  signature or an independent store. Unknown fields round-trip unchanged.
 - `environment_fingerprint(...)` describes the running interpreter, platform
   and named distributions.
 - `ReplayStatus` names what a replay established: `not_performed`,

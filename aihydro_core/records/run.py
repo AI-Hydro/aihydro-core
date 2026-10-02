@@ -134,6 +134,14 @@ class RunRecord:
                 raise ValueError(f"RunRecord.{name} must be 'sha256:<64 hex>' or None, got {value!r}")
         if isinstance(self.actor, Actor):
             self.actor = self.actor.to_dict()
+        elif self.actor is not None:
+            Actor.from_dict(self.actor)  # validates kind/id; keeps the dict as given
+        for ref in self.input_refs:
+            if not isinstance(ref, dict) or not isinstance(ref.get("ref"), str):
+                raise ValueError(f"RunRecord.input_refs entries need a string 'ref', got {ref!r}")
+            input_ref(ref["ref"], ref.get("digest"), ref.get("role", "other"))
+        if not all(isinstance(p, str) and p for p in self.parents):
+            raise ValueError("RunRecord.parents must be non-empty run_id strings")
 
     # -- serialisation -------------------------------------------------
     def to_dict(self) -> Dict[str, Any]:

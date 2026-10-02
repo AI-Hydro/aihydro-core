@@ -1,0 +1,96 @@
+{
+ "canonicalization": "aihydro.c14n/1",
+ "note": "JSON-native inputs only; tagged Python types (arrays, dates, NaN, sets) are specified in canonical.py and must be tagged before JCS serialisation.",
+ "cases": [
+  {
+   "name": "scalars",
+   "input": {
+    "null": null,
+    "t": true,
+    "f": false,
+    "i": -42,
+    "s": "héllo"
+   },
+   "canonical": "{\"f\":false,\"i\":-42,\"null\":null,\"s\":\"héllo\",\"t\":true}",
+   "digest": "sha256:554a04997b20c8fc914aedecb22f8ca08d21479899102892aeac1e36731537f9"
+  },
+  {
+   "name": "numbers",
+   "input": [
+    0,
+    1.0,
+    -0.0,
+    4.5,
+    0.1,
+    1e+21,
+    1e-07,
+    1e+20,
+    9007199254740992
+   ],
+   "canonical": "[0,1,0,4.5,0.1,1e+21,1e-7,100000000000000000000,9007199254740992]",
+   "digest": "sha256:ccd462311f95af7fd3a2e5336276f7dff4e276b1cb9a27f8888bc1eb84507559"
+  },
+  {
+   "name": "big_int",
+   "input": {
+    "n": 9007199254740993
+   },
+   "canonical": "{\"n\":{\"$int\":\"9007199254740993\"}}",
+   "digest": "sha256:2f5155b6c30350123cd2a80d086e6d01b02fc59309618005ac65289e0d76db16"
+  },
+  {
+   "name": "nested_sorted",
+   "input": {
+    "b": [
+     3,
+     {
+      "z": 1,
+      "a": 2
+     }
+    ],
+    "a": {
+     "y": [],
+     "x": {}
+    }
+   },
+   "canonical": "{\"a\":{\"x\":{},\"y\":[]},\"b\":[3,{\"a\":2,\"z\":1}]}",
+   "digest": "sha256:cc56ba2dccec941c2696f0d74dd52fe029207df36f1a1488c4f4bbfdb2c6f4e7"
+  },
+  {
+   "name": "utf16_order",
+   "input": {
+    "😀": 1,
+    "": 2,
+    "a": 3
+   },
+   "canonical": "{\"a\":3,\"😀\":1,\"\":2}",
+   "digest": "sha256:a901d5c9340048b768183fd6fb82e7d0f7792049a0aafa9d2c7ccd845d984ad3"
+  },
+  {
+   "name": "escapes",
+   "input": "line1\nline2\t\"q\"\\\u0007",
+   "canonical": "\"line1\\nline2\\t\\\"q\\\"\\\\\\u0007\"",
+   "digest": "sha256:5b592b95dfb455ceaa47178143189d24c767dd5ef12eb7baa6e0b1b922f6981c"
+  },
+  {
+   "name": "tag_escape",
+   "input": {
+    "$float": "nan"
+   },
+   "canonical": "{\"$map\":{\"$float\":\"nan\"}}",
+   "digest": "sha256:f1d857848ed494a9c4c7a6806c1de44cfa76d3855ff09a4ac9b40af2c19f2d18"
+  },
+  {
+   "name": "run_record_like",
+   "input": {
+    "schema": "aihydro.run/2",
+    "run_id": "q.20261002.abc.00000001",
+    "tool": "fetch_streamflow_data",
+    "parents": [],
+    "status": "ok"
+   },
+   "canonical": "{\"parents\":[],\"run_id\":\"q.20261002.abc.00000001\",\"schema\":\"aihydro.run/2\",\"status\":\"ok\",\"tool\":\"fetch_streamflow_data\"}",
+   "digest": "sha256:768fca1867835c9fd91525806087396a0773afe3e164d9962bff04444764b632"
+  }
+ ]
+}

@@ -22,3 +22,12 @@ repair and its regression tests for commit/push; no PyPI release requested.
 - The module is stdlib-only, enforced by an AST import test.
 - `pytest -q`: 138 passed (113 existing + 25 new). `ruff check`: clean.
 - The work lives on a branch in a git worktree. It is not merged or released.
+
+## 2026-10-02 — Records contract hardened after adversarial review (T14)
+
+- `aihydro.c14n/1` is now tagging plus RFC 8785 JCS serialisation, with ECMAScript numbers and UTF-16 key order. Integers above 2^53 are tagged.
+  - Golden vectors in `tests/data/c14n_vectors.json`.
+  - An independent JavaScript JCS check agreed byte-for-byte and digest-for-digest on 8 of 8 vectors.
+- Masked-array masks and structured-dtype field names are now encoded, closing the aliasing the reviewer reproduced. Lone surrogates raise `UnencodableError`. `RunRecord` validates the nested actor, input refs and parents.
+- The README now says seals prove integrity, not origin.
+- `pytest -q`: 163 passed. `ruff`: clean.

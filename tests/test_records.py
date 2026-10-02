@@ -266,3 +266,78 @@ def test_records_imports_only_stdlib_and_core():
                 names = [node.module]
             offenders += [f"{path.name}: {n}" for n in names if n.split(".")[0] not in allowed]
     assert not offenders, offenders
+
+
+# ---------------------------------------------------------------- RFC 8785 / cross-language
+# Expected strings are ECMAScript Number.prototype.toString results (independent
+# of this implementation), i.e. what a JS JCS verifier produces.
+@pytest.mark.parametrize("value, expected", [
+    (0.0, "0"), (-0.0, "0"), (1.0, "1"), (100.0, "100"), (4.5, "4.5"), (-4.5, "-4.5"),
+    (0.1 + 0.2, "0.30000000000000004"), (1e20, "100000000000000000000"), (1e21, "1e+21"),
+    (0.000001, "0.000001"), (1e-7, "1e-7"), (1.23e-18, "1.23e-18"), (5e-324, "5e-324"),
+    (1.7976931348623157e308, "1.7976931348623157e+308"), (9007199254740992.0, "9007199254740992"),
+    (333333333.3333333, "333333333.3333333"), (123456789012345680000.0, "123456789012345680000"),
+])
+def test_float_serialisation_matches_ecmascript(value, expected):
+    assert canonical_json(value) == expected.encode()
+
+
+def test_big_integers_are_tagged_not_rounded():
+    assert canonical_json(2 ** 53) == b"9007199254740992"
+    assert canonical_json(2 ** 53 + 1) == b'{"$int":"9007199254740993"}'
+    assert digest(2 ** 64) != digest(2 ** 64 + 1)
+
+
+def test_keys_sorted_by_utf16_code_units():
+    # U+E000 sorts before U+1F600 in UTF-16 (surrogates 0xD83D...) but after it by code point.
+    enc = canonical_json({"\U0001F600": 1, "": 2, "a": 3})
+    assert enc.index("a".encode()) < enc.index("\U0001F600".encode()) < enc.index("".encode())
+
+
+def test_string_escaping_is_minimal():
+    assert canonical_json("a\"b\\c\n\u0001/ é") == '"a\\"b\\\\c\\n\\u0001/ é"'.encode()
+
+
+def test_lone_surrogate_is_unencodable():
+    with pytest.raises(UnencodableError):
+        canonical_json("\ud800")
+
+
+def test_masked_arrays_do_not_alias_missing_values():
+    np = pytest.importorskip("numpy")
+    data = np.array([1.0, 2.0, 3.0])
+    present = np.ma.MaskedArray(data, mask=[False, False, False])
+    missing = np.ma.MaskedArray(data, mask=[False, True, False])
+    assert digest(present) != digest(missing)
+    assert digest(missing) != digest(data)
+    assert digest(np.ma.MaskedArray(data)) != digest(data)  # nomask still tagged
+
+
+def test_structured_dtype_field_names_are_encoded():
+    np = pytest.importorskip("numpy")
+    a = np.zeros(2, dtype=[("q", "<f8"), ("p", "<f8")])
+    b = np.zeros(2, dtype=[("p", "<f8"), ("q", "<f8")])
+    assert digest(a) != digest(b)
+
+
+def test_run_record_validates_nested_fields():
+    with pytest.raises(ValueError):
+        _record(actor={"kind": "robot", "id": "x"})
+    with pytest.raises(ValueError):
+        _record(input_refs=[{"digest": None}])
+    with pytest.raises(ValueError):
+        _record(parents=[""])
+
+
+_VECTORS = Path(__file__).resolve().parent / "data" / "c14n_vectors.json"
+
+
+def test_golden_vectors_are_stable():
+    """Pinned bytes and digests for cross-language verifiers (TS/JS JCS + tags)."""
+    import json
+
+    vectors = json.loads(_VECTORS.read_text(encoding="utf-8"))
+    assert vectors["canonicalization"] == CANONICALIZATION
+    for case in vectors["cases"]:
+        assert canonical_json(case["input"]).decode("utf-8") == case["canonical"], case["name"]
+        assert digest(case["input"]) == case["digest"], case["name"]
