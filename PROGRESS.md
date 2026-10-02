@@ -1,5 +1,15 @@
 # aihydro-core progress
 
+## 2026-10-02 — Place identity (2040 slice 3 P1, branch `vision2040/place-core`, 0.2.3)
+
+- Added `aihydro_core.records.place`: `PlaceAlias`, `OutletRef`, `ReachRef`,
+  `BasinRef`, `basin_id_from_anchor`, `verify_basin_ref_dict`, `geometry_id`
+  (`aihydro.geom/1`), `canonical_geometry`, `crosses_antimeridian`.
+- `INPUT_ROLES` gained `"place"`. Version bumped to 0.2.3. Stdlib-only guard stays green.
+- Golden vectors `tests/data/place_vectors.json` re-derived independently by
+  `tests/data/place_crosscheck.js` (Node): all 10 vectors agree.
+- `pytest -q`: 189 passed (168 + 21 new). Not merged or released.
+
 ## 2026-10-02 — ClaimRevision (2040 slice 2 P0, branch `vision2040/claim-revision`, 0.2.2)
 
 - Added `aihydro_core.records.claim`: `ClaimRevision` with seal, verify,

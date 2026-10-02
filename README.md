@@ -37,6 +37,28 @@ program, ADR-001). It is stdlib-only.
   (`{tool, run_id?, reason}`), a required `actor`, `recorded_at` and
   `record_digest`. `verify_chain()` checks a claim's whole chain. The same
   integrity-not-origin caveat as `RunRecord` applies.
+- `BasinRef` / `OutletRef` / `ReachRef` / `PlaceAlias` (`records/place.py`,
+  ADR-003) are the canonical place-identity types, with `to_dict`/`from_dict`
+  that preserve unknown fields. `BasinRef.id` is `"aihydro:basin:" +
+  digest(anchor)`, where the anchor is `{kind, network, network_version,
+  element}`; aliases and geometry are **excluded**, so the id is stable when
+  an alias is added or the polygon is re-delineated. Different delineation
+  methods give different ids; sameness across methods is asserted by shared
+  aliases or an explicit comparison record. `verify_basin_ref_dict` recomputes
+  the id. This package defines the types and algorithms; aihydro-watershed is
+  the only minter.
+- `geometry_id(geojson)` implements `aihydro.geom/1`: EPSG:4326 lon/lat
+  quantised to 1e-6 degrees (integers), duplicate and closing vertices
+  dropped, degenerate rings dropped, exterior CCW / holes CW, rings rotated to
+  the smallest vertex, holes and polygons sorted, Polygon emitted as a
+  one-member MultiPolygon, then `digest()`. It is invariant to ring rotation,
+  reversal, duplicate vertices and hole/polygon order, and **not**
+  tolerance-invariant: a coordinate that crosses a quantisation boundary
+  changes the digest, which is why identity is the anchor and the digest
+  names only one geometry realisation. Antimeridian-crossing polygons must be
+  split first (`crosses_antimeridian` flags them). Golden vectors are in
+  `tests/data/place_vectors.json`; `tests/data/place_crosscheck.js` re-derives
+  them independently in Node.
 - `environment_fingerprint(...)` describes the running interpreter, platform
   and named distributions.
 - `ReplayStatus` names what a replay established: `not_performed`,

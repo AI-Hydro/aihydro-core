@@ -27,7 +27,7 @@ RUN_SCHEMA = "aihydro.run/2"
 
 RUN_STATUSES = ("ok", "error", "refused")
 ACTOR_KINDS = ("human", "agent", "package", "system")
-INPUT_ROLES = ("parameters", "served_data", "upstream_output", "artifact", "other")
+INPUT_ROLES = ("parameters", "served_data", "upstream_output", "artifact", "place", "other")
 
 
 def utc_now() -> str:

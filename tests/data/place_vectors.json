@@ -1,0 +1,468 @@
+{
+ "algorithm": "aihydro.geom/1",
+ "note": "Pinned by tests/test_place.py; independently re-derived by tests/data/place_crosscheck.js.",
+ "geometry": [
+  {
+   "name": "polygon_with_hole_rotated_reversed",
+   "input": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       4,
+       4
+      ],
+      [
+       0,
+       4
+      ],
+      [
+       0,
+       0
+      ],
+      [
+       4,
+       0
+      ],
+      [
+       4,
+       4
+      ]
+     ],
+     [
+      [
+       1,
+       1
+      ],
+      [
+       2,
+       1
+      ],
+      [
+       2,
+       2
+      ],
+      [
+       1,
+       2
+      ],
+      [
+       1,
+       1
+      ]
+     ]
+    ]
+   },
+   "payload": {
+    "alg": "aihydro.geom/1",
+    "q_exp": 6,
+    "type": "MultiPolygon",
+    "coordinates": [
+     [
+      [
+       [
+        0,
+        0
+       ],
+       [
+        4000000,
+        0
+       ],
+       [
+        4000000,
+        4000000
+       ],
+       [
+        0,
+        4000000
+       ]
+      ],
+      [
+       [
+        1000000,
+        1000000
+       ],
+       [
+        1000000,
+        2000000
+       ],
+       [
+        2000000,
+        2000000
+       ],
+       [
+        2000000,
+        1000000
+       ]
+      ]
+     ]
+    ]
+   },
+   "digest": "sha256:c018d778314b7f122bcb131510ef84a774fe2fd2ce8d7e8c757c28d570a2b847"
+  },
+  {
+   "name": "polygon_unclosed_dups",
+   "input": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       0,
+       0
+      ],
+      [
+       0,
+       0
+      ],
+      [
+       4,
+       0
+      ],
+      [
+       4,
+       4
+      ],
+      [
+       0,
+       4
+      ]
+     ]
+    ]
+   },
+   "payload": {
+    "alg": "aihydro.geom/1",
+    "q_exp": 6,
+    "type": "MultiPolygon",
+    "coordinates": [
+     [
+      [
+       [
+        0,
+        0
+       ],
+       [
+        4000000,
+        0
+       ],
+       [
+        4000000,
+        4000000
+       ],
+       [
+        0,
+        4000000
+       ]
+      ]
+     ]
+    ]
+   },
+   "digest": "sha256:978c2aeb4c70529cedab0bd8bf168752f0e5dbfbe3509e245a9c96ad8ca271d4"
+  },
+  {
+   "name": "multipolygon_unordered",
+   "input": {
+    "type": "MultiPolygon",
+    "coordinates": [
+     [
+      [
+       [
+        10,
+        10
+       ],
+       [
+        11,
+        10
+       ],
+       [
+        11,
+        11
+       ],
+       [
+        10,
+        11
+       ],
+       [
+        10,
+        10
+       ]
+      ]
+     ],
+     [
+      [
+       [
+        0,
+        0
+       ],
+       [
+        4,
+        0
+       ],
+       [
+        4,
+        4
+       ],
+       [
+        0,
+        4
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      [
+       [
+        1,
+        1
+       ],
+       [
+        1,
+        2
+       ],
+       [
+        2,
+        2
+       ],
+       [
+        2,
+        1
+       ],
+       [
+        1,
+        1
+       ]
+      ]
+     ]
+    ]
+   },
+   "payload": {
+    "alg": "aihydro.geom/1",
+    "q_exp": 6,
+    "type": "MultiPolygon",
+    "coordinates": [
+     [
+      [
+       [
+        0,
+        0
+       ],
+       [
+        4000000,
+        0
+       ],
+       [
+        4000000,
+        4000000
+       ],
+       [
+        0,
+        4000000
+       ]
+      ],
+      [
+       [
+        1000000,
+        1000000
+       ],
+       [
+        1000000,
+        2000000
+       ],
+       [
+        2000000,
+        2000000
+       ],
+       [
+        2000000,
+        1000000
+       ]
+      ]
+     ],
+     [
+      [
+       [
+        10000000,
+        10000000
+       ],
+       [
+        11000000,
+        10000000
+       ],
+       [
+        11000000,
+        11000000
+       ],
+       [
+        10000000,
+        11000000
+       ]
+      ]
+     ]
+    ]
+   },
+   "digest": "sha256:068d6b519e34b19459321ba49ef968bed441db01388e1c6f98bc91c699ceae13"
+  },
+  {
+   "name": "real_scale_basin_fraction_coords",
+   "input": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -68.5812345,
+       47.2312345
+      ],
+      [
+       -68.4012349,
+       47.2312345
+      ],
+      [
+       -68.4012349,
+       47.3512341
+      ],
+      [
+       -68.5812345,
+       47.3512341
+      ],
+      [
+       -68.5812345,
+       47.2312345
+      ]
+     ]
+    ]
+   },
+   "payload": {
+    "alg": "aihydro.geom/1",
+    "q_exp": 6,
+    "type": "MultiPolygon",
+    "coordinates": [
+     [
+      [
+       [
+        -68581234,
+        47231234
+       ],
+       [
+        -68401235,
+        47231234
+       ],
+       [
+        -68401235,
+        47351234
+       ],
+       [
+        -68581234,
+        47351234
+       ]
+      ]
+     ]
+    ]
+   },
+   "digest": "sha256:0faafe0f1e65b602b1d608dc29913cfc257e9de140436fbba878a3f7834efed7"
+  },
+  {
+   "name": "point",
+   "input": {
+    "type": "Point",
+    "coordinates": [
+     -68.58,
+     47.23
+    ]
+   },
+   "payload": {
+    "alg": "aihydro.geom/1",
+    "q_exp": 6,
+    "type": "Point",
+    "coordinates": [
+     -68580000,
+     47230000
+    ]
+   },
+   "digest": "sha256:d37672c22fb4f234d26933fd481a0240deaa892a7864f4e3b532ce88bc39a337"
+  },
+  {
+   "name": "multipoint_sorted_dedup",
+   "input": {
+    "type": "MultiPoint",
+    "coordinates": [
+     [
+      3,
+      4
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ]
+   },
+   "payload": {
+    "alg": "aihydro.geom/1",
+    "q_exp": 6,
+    "type": "MultiPoint",
+    "coordinates": [
+     [
+      1000000,
+      2000000
+     ],
+     [
+      3000000,
+      4000000
+     ]
+    ]
+   },
+   "digest": "sha256:4280c505d9bff75b34d4104f7f3d8b929992820a395edb0b89fd850c1c132a17"
+  },
+  {
+   "name": "gauge_id",
+   "input": {
+    "type": "GaugeID",
+    "scheme": "usgs",
+    "id": "01013500"
+   },
+   "payload": {
+    "alg": "aihydro.geom/1",
+    "q_exp": 6,
+    "type": "GaugeID",
+    "scheme": "usgs",
+    "id": "01013500"
+   },
+   "digest": "sha256:13f997e27ba4ff65dbd6e134cbe87882818ac1d0eb7a634625d7c90b8a27bb33"
+  }
+ ],
+ "anchors": [
+  {
+   "name": "nldi_gauge",
+   "anchor": {
+    "kind": "gauge_index",
+    "network": "nldi-usgs",
+    "network_version": "unversioned",
+    "element": "01013500"
+   },
+   "id": "aihydro:basin:sha256:6ec6a52b1f845ce0e86601766c5218dd3c56be118e041e4e2a4b9614ce626c08"
+  },
+  {
+   "name": "merit_catchment",
+   "anchor": {
+    "kind": "network_element",
+    "network": "merit-hydro",
+    "network_version": "v07_b",
+    "element": "71000001"
+   },
+   "id": "aihydro:basin:sha256:19f5ff184950b3414f367a91681af436f9c7cefff287cf8a6d8761d620523e74"
+  },
+  {
+   "name": "grid_cell",
+   "anchor": {
+    "kind": "grid_cell",
+    "network": "pysheds-dem",
+    "network_version": "unversioned",
+    "element": "r120c88"
+   },
+   "id": "aihydro:basin:sha256:5cc9549ad34fa33c465b401a6d282f923377a5f590e19bd8817d6760961b07cc"
+  }
+ ]
+}

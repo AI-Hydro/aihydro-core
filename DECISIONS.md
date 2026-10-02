@@ -4,6 +4,31 @@ Append-only. Newest first. One entry per non-obvious choice, with the **why**.
 
 ---
 
+## 2026-10-02 — Place identity types and geometry id (slice 3, P1; core 0.2.3)
+
+**Decision.** Add `aihydro_core.records.place` (stdlib): `PlaceAlias`,
+`OutletRef`, `ReachRef`, `BasinRef`, `geometry_id` (`aihydro.geom/1`),
+`basin_id_from_anchor` and `verify_basin_ref_dict`. `BasinRef.id` hashes the
+network anchor only. `geometry_digest` names one geometry realisation and is
+never the identity. `"place"` is added to `INPUT_ROLES` (additive).
+
+**Why.** No exact polygon hash is tolerance-invariant (about 2 of 20,000
+coordinates flip under a 1e-10 degree perturbation at a 1e-6 degree quantum),
+so a polygon digest cannot be a stable basin id. The spec lives in core because
+aihydro-data, below watershed, needs the geometry id for its cache key;
+aihydro-watershed remains the only minter (ADR-003 Amendment).
+
+**Choices to note.** Single Polygon canonicalises to a one-member MultiPolygon.
+Degenerate holes and member polygons are dropped; an all-degenerate geometry
+raises `DEGENERATE_GEOMETRY`. Lon/lat outside range and non-finite values are
+rejected; no antimeridian unwrapping (`crosses_antimeridian` flags unsplit
+crossings). `round` is half-to-even, mirrored in the Node cross-check.
+`BasinRef` keeps a supplied `id` as given so tampering is detectable.
+
+**Reference.** ADR-003 and Amendment; `docs/vision-2040/plans/slice-3-place-identity.md`.
+
+---
+
 ## 2026-10-02 — ClaimRevision record (slice 2, P0; core 0.2.2)
 
 **Decision.** Add a stdlib `ClaimRevision` (`aihydro.claim_revision_record/1`)
