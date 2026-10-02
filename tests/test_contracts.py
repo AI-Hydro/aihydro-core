@@ -28,3 +28,11 @@ def test_non_serializable_rejected():
     meta = HydroMeta(tool="t", version="1.0")
     with pytest.raises(ValueError):
         HydroResult(data={"bad": {1, 2, 3}}, meta=meta)  # a set is not JSON-serializable
+
+
+def test_result_meta_carries_optional_basin_ref_id():
+    from aihydro_core.contracts import ResultMeta
+
+    rid = "aihydro:basin:sha256:" + "0" * 64
+    assert ResultMeta(basin_ref_id=rid).basin_ref_id == rid
+    assert ResultMeta().basin_ref_id is None

@@ -25,7 +25,7 @@ Usage
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -147,6 +147,14 @@ class ResultMeta(BaseModel):
     duration_s: float = Field(default=0.0, description="Total wall-clock time in seconds")
     content_hash: str = Field(
         default="", description="SHA-256 of attrs dict (NaN→null, keys sorted) for reproducibility"
+    )
+    basin_ref_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Canonical place identity of the basin (aihydro_core.records.place, "
+            "'aihydro:basin:sha256:<hex>'); None when the run had no BasinRef. "
+            "Not part of content_hash."
+        ),
     )
     computed_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
