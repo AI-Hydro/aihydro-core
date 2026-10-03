@@ -57,6 +57,9 @@ _T = {"start.1": "2026-10-03T10:00:01.000001Z", "watershed.1": "2026-10-03T10:00
       "claim.1": "2026-10-03T10:00:05.000001Z", "promo.1": "2026-10-03T10:00:06.000001Z"}
 
 
+_TOOL_VERSION = ["2.1.0"]
+
+
 def _dump(obj: Any) -> bytes:
     return (json.dumps(obj, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
@@ -72,7 +75,7 @@ def _row(run_id: str, tool: str, *, parents=(), input_refs=(), output: Any = Non
         row.update({"error": True, "error_summary": error_summary})
     ex = dict(extra or {})
     ex["entry_digest"] = entry_digest(row)
-    rec = RunRecord(run_id=run_id, tool=tool, tool_version="2.1.0", version_source="package",
+    rec = RunRecord(run_id=run_id, tool=tool, tool_version=_TOOL_VERSION[0], version_source="package",
                     session_id=SID, recorded_at=_T[run_id], status=status,
                     input_digest=digest({"params": run_id}), input_refs=list(input_refs),
                     output_digest=digest(output if output is not None else {"out": run_id}),
@@ -82,8 +85,9 @@ def _row(run_id: str, tool: str, *, parents=(), input_refs=(), output: Any = Non
 
 
 def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None,
-                  revisions: int = 3) -> Bundle:
+                  revisions: int = 3, tool_version: Optional[str] = "2.1.0") -> Bundle:
     """Write the synthetic capsule into ``directory`` and return its sealed Bundle."""
+    _TOOL_VERSION[0] = tool_version
     root = Path(directory)
     (root / "data").mkdir(parents=True, exist_ok=True)
     (root / "records").mkdir(parents=True, exist_ok=True)
@@ -160,7 +164,8 @@ def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None
                 "files": [{"path": p, "sha256": f["sha256"], "size": f["size"]} for p, f in sorted(listing.items())]}
     (root / "capsule_manifest.json").write_bytes(_dump(manifest))
 
-    roles = {"run_log.json": "run_log", "session.json": "session", "README.md": "readme",
+    listing = {p: f for p, f in rc.scan_files(root).items() if p not in (rc.CRATE_FILE, rc.BAGIT_FILE, "bundle.json")}
+    roles = {"capsule_manifest.json": "manifest", "replay.py": "verifier","run_log.json": "run_log", "session.json": "session", "README.md": "readme",
              "data/served_streamflow_x.csv": "served_data", "data/streamflow_x.json": "retained_data",
              "records/claim_revisions.json": "claim_revisions"}
     objects = [make_object_entry(p, "sha256:" + f["sha256"], f["size"], roles[p], media_type=f["media_type"],

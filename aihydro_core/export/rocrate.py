@@ -35,15 +35,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 from urllib.parse import quote
 
 from aihydro_core.records import (
+    GATE_CODES,
+    GATE_OUTCOMES,
     Bundle,
     BundleError,
+    ReplayStatus,
     coverage_complete,
+    replay_rank,
     resolve_location,
     split_location,
     verify_binding,
@@ -81,6 +86,12 @@ FAILED = "http://schema.org/FailedActionStatus"
 
 #: Terms defined in-graph (RO-Crate 1.3 extension rule): IRI, label, comment.
 TERMS: Dict[str, Tuple[str, str]] = {
+    "contentDigest": (
+        "Content digest",
+        "sha256:<hex> digest of the JSON object this entity was projected from. Unlike recordDigest it is "
+        "not a seal: the object is content-addressed and is trustworthy only because it lies inside a "
+        "body that is bound to a sealed record.",
+    ),
     "canonicalization": (
         "Canonicalization",
         "Name of the canonical encoding that the accompanying digest was computed under "
@@ -104,10 +115,21 @@ TERMS: Dict[str, Tuple[str, str]] = {
     ),
 }
 
-#: Local-path leak detector shared by the projection and the validator.
+#: Top-level directories that mark a local absolute path. One list shared by the
+#: projection, the validator and (by import) aihydro-tools' scrubber.
+LOCAL_ROOTS = ("Users", "home", "private", "var", "tmp", "opt", "root", "mnt", "Volumes", "srv",
+               "scratch", "etc")
+_B = r"(?:^|[\s\"'(=,;\[])"            # boundary before a path ('/' and ':' excluded: URLs)
+#: Local-path leak detector: POSIX roots, file:// URLs, Windows drive and UNC paths,
+#: //server/share, ~/ and $HOME-style references.
 PATH_PATTERN = re.compile(
-    r"file://|(?:^|[\s\"'(=:,;\[])/(?:Users|home|private|var|tmp|opt|root|mnt|Volumes|etc|srv)/"
-    r"|(?:^|[\s\"'(=:,;\[])[A-Za-z]:\\"
+    r"file://"
+    r"|(?:^|[\s\"'(=:,;\[])/(?:" + "|".join(LOCAL_ROOTS) + r")/"
+    r"|(?:^|[\s\"'(=:,;\[])[A-Za-z]:[\\/]"
+    r"|" + _B + r"//[^/\s]+/[^/\s]+"
+    r"|\\\\[^\\\s]+\\[^\\\s]+"
+    r"|" + _B + r"~(?:[A-Za-z_][A-Za-z0-9_-]*)?/"
+    r"|\$\{?HOME\b|%USERPROFILE%|%HOMEPATH%"
 )
 
 _MEDIA_TYPES = {
@@ -245,6 +267,11 @@ def to_rocrate(
         raise ValueError("to_rocrate needs a sealed Bundle that verifies")
     if not bundle.replay or not bundle.coverage:
         raise ValueError("the Bundle must carry its replay assessment and coverage")
+    # Only archive-integrity-level facts can be projected: no recomputation or cross-check
+    # entity exists in this projection yet, so a stronger level cannot be supported.
+    if replay_rank(bundle.replay["status"]) >= replay_rank(ReplayStatus.CROSS_CHECK):
+        raise ValueError(f"replay level {bundle.replay['status']!r} needs a recomputation or cross-check "
+                         "entity that this projection cannot emit; refusing to state it")
     for o in bundle.objects:
         f = files.get(o["ref"])
         if f is None or "sha256:" + f["sha256"] != o["digest"] or f["size"] != o["size"]:
@@ -307,7 +334,7 @@ def to_rocrate(
     # ---- instruments
     def tool_entity(tool: str, version: Optional[str], env_digest: Optional[str]) -> str:
         tid = frag("tool", tool + (f"@{version}" if version else ""))
-        ent: Dict[str, Any] = {"@id": tid, "@type": "SoftwareApplication", "name": tool, "version": version,
+        ent: Dict[str, Any] = {"@id": tid, "@type": "SoftwareApplication", "name": tool, "version": version or "unversioned",
                                "url": TOOLS_URL}
         if env_digest:
             env = frag("env", env_digest.replace("sha256:", ""))
@@ -328,8 +355,8 @@ def to_rocrate(
 
     action_ids: List[str] = []
     produced_files: set = set()
-    gate_by_run = {}
-    for gt in bundle.gates or []:
+    gate_by_run: Dict[str, set] = {}
+    for gt in derive_gates(bundle, records, bodies):
         gate_by_run.setdefault(gt["run_id"], set()).add(gt["code"])
 
     for gk, rids in sorted(groups.items()):
@@ -338,7 +365,7 @@ def to_rocrate(
         if rids[0] in unverifiable and len(rids) == 1:
             rid = rids[0]
             unknown_tool = g.add({"@id": frag("tool", "unverifiable-record"), "@type": "SoftwareApplication",
-                                  "name": "unknown (record withheld or unverifiable)",
+                                  "name": "unknown (record withheld or unverifiable)", "version": "unknown",
                                   "url": ORG_URL})
             g.add({"@id": aid, "@type": "CreateAction", "name": f"unverifiable record {rid}",
                    "description": "Digest-only stub: this record could not be verified or was withheld on export "
@@ -441,7 +468,7 @@ def to_rocrate(
         if bid in unverifiable or rec_of("basin_ref", bid) is None:
             g.add({"@id": pid, "@type": "Place", "name": f"Basin {bid}", "identifier": bid,
                    "description": "Basin reference could not be verified or was withheld; identifier only.",
-                   "aihydro:recordDigest": e["record_digest"]})
+                   "aihydro:contentDigest": e["record_digest"]})
             continue
         br = rec_of("basin_ref", bid)
         hexid = basin_hex(bid)
@@ -460,7 +487,7 @@ def to_rocrate(
         anchor = br.get("anchor") or {}
         g.add({"@id": pid, "@type": "Place", "name": f"Basin anchored at {anchor.get('element', bid)}",
                "identifier": bid, "containsPlace": ref(out_id), "additionalProperty": _refs(props),
-               "aihydro:recordDigest": e["record_digest"], "aihydro:recordLocation": e["record_location"]})
+               "aihydro:contentDigest": e["record_digest"], "aihydro:recordLocation": e["record_location"]})
         alias_ids = []
         for n, al in enumerate(outlet.get("aliases") or []):
             aid_ = frag("alias", hexid, str(al.get("scheme")), str(n))
@@ -480,6 +507,10 @@ def to_rocrate(
         basin_ids[bid] = pid
 
     # ---- claims
+    def bound_body(rid: str) -> Optional[Mapping[str, Any]]:
+        return _bound_run_body(entries.get(("run", rid)), rid in unverifiable,
+                               records.get(record_key("run", rid)), bodies.get(record_key("run", rid)))
+
     def stat_for(span: Mapping[str, Any]) -> Optional[str]:
         if span.get("source_type") != "run" or not span.get("metric_ref"):
             return None
@@ -488,9 +519,8 @@ def to_rocrate(
             return None
         metric = span["metric_ref"]
         for rid in sorted(groups.get(gk, ())):
-            e = entries.get(("run", rid))
-            body = bodies.get(record_key("run", rid))
-            if e is None or rid in unverifiable or body is None or not verify_binding(body, e.get("binding")):
+            body = bound_body(rid)
+            if body is None:
                 continue
             unc = (body.get("evidence") or {}).get("uncertainty") if isinstance(body.get("evidence"), Mapping) else None
             u = unc.get(metric) if isinstance(unc, Mapping) else None
@@ -687,6 +717,38 @@ def context_terms() -> Dict[str, str]:
     return ctx
 
 
+def _bound_run_body(entry, unverifiable: bool, record, body) -> Optional[Mapping[str, Any]]:
+    """The row body of a run, only if its binding is *the sealed one*: the bundle's binding
+    verifies against the body AND equals ``record.extra.entry_digest`` (so the body is bound
+    to the sealed record, not merely to the bundle)."""
+    if entry is None or unverifiable or body is None or record is None:
+        return None
+    binding = entry.get("binding")
+    if not verify_binding(body, binding):
+        return None
+    extra = record.get("extra")
+    sealed = extra.get("entry_digest") if isinstance(extra, Mapping) else None
+    return body if sealed == binding["digest"] else None
+
+
+def derive_gates(bundle: Bundle, records: Mapping[str, Any], bodies: Mapping[str, Any]) -> List[Dict[str, Any]]:
+    """Gate refusals found in verified, sealed-bound run bodies: ``error_summary`` equal to an
+    allowlisted code. ``bundle.gates`` is only a declaration that must equal this set."""
+    unverifiable = set((bundle.coverage or {}).get("unverifiable_ids", []))
+    out = []
+    for e in bundle.records:
+        if e["kind"] != "run":
+            continue
+        rid = e["id"]
+        rec = records.get(record_key("run", rid))
+        body = _bound_run_body(e, rid in unverifiable, rec, bodies.get(record_key("run", rid)))
+        code = body.get("error_summary") if body else None
+        if code in GATE_CODES:
+            out.append({"run_id": rid, "code": code,
+                        "outcome": rec["status"] if rec.get("status") in GATE_OUTCOMES else "error"})
+    return sorted(out, key=lambda g: (g["run_id"], g["code"]))
+
+
 def _output_digest_of(gk, groups, rec_of, unverifiable) -> Optional[str]:
     for r in sorted(groups.get(gk, ())):
         if r in unverifiable:
@@ -722,17 +784,44 @@ def write_crate(crate: Mapping[str, Any], directory: "str | Path") -> Path:
 
 
 # ------------------------------------------------------------------- inputs
-def scan_files(directory: "str | Path") -> Dict[str, Dict[str, Any]]:
+def find_symlinks(directory: "str | Path") -> List[str]:
+    """Relative paths of every symlink (file or directory) under ``directory``."""
+    root = Path(directory)
+    found: List[str] = []
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        for name in list(dirnames) + list(filenames):
+            full = Path(dirpath) / name
+            if full.is_symlink():
+                found.append(full.relative_to(root).as_posix())
+    return sorted(found)
+
+
+def _walk_files(root: Path) -> List[Path]:
+    out = []
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        dirnames[:] = [d for d in dirnames if not (Path(dirpath) / d).is_symlink()]
+        for name in filenames:
+            full = Path(dirpath) / name
+            if not full.is_symlink() and full.is_file():
+                out.append(full)
+    return sorted(out)
+
+
+def scan_files(directory: "str | Path", *, strict: bool = True) -> Dict[str, Dict[str, Any]]:
     """The ``files`` map for a capsule directory.
 
     Every regular file under ``directory`` except the crate and the BagIt
-    manifest, as ``{relpath: {sha256 (bare hex), size, media_type}}``.
+    manifest, as ``{relpath: {sha256 (bare hex), size, media_type}}``. A symlink
+    anywhere is an error (``ValueError``) unless ``strict=False`` (the verifier
+    reports symlinks itself).
     """
     root = Path(directory)
+    if strict:
+        links = find_symlinks(root)
+        if links:
+            raise ValueError(f"capsule contains symlinks, which are never exported: {links}")
     out: Dict[str, Dict[str, Any]] = {}
-    for p in sorted(root.rglob("*")):
-        if not p.is_file() or p.is_symlink():
-            continue
+    for p in _walk_files(root):
         rel = p.relative_to(root).as_posix()
         if rel in (CRATE_FILE, BAGIT_FILE):
             continue
@@ -742,7 +831,7 @@ def scan_files(directory: "str | Path") -> Dict[str, Dict[str, Any]]:
     return out
 
 
-def load_inputs(directory: "str | Path", bundle: Bundle) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
+def load_inputs(directory: "str | Path", bundle: Bundle, *, strict: bool = True) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """Resolve every bundle location from disk: ``(records, bodies, files)``.
 
     Records that cannot be resolved are simply absent (``verify_crate`` reports
@@ -775,7 +864,7 @@ def load_inputs(directory: "str | Path", bundle: Bundle) -> Tuple[Dict[str, Any]
                 target[key] = resolve_location({path: d}, loc)
             except BundleError:
                 continue
-    return records, bodies, scan_files(root)
+    return records, bodies, scan_files(root, strict=strict)
 
 
 _MISSING = object()
@@ -784,12 +873,14 @@ _MISSING = object()
 def write_manifest_sha256(directory: "str | Path") -> Path:
     """BagIt-style ``manifest-sha256.txt``: ``<hex>  <path>`` for every file but itself."""
     root = Path(directory)
+    links = find_symlinks(root)
+    if links:
+        raise ValueError(f"capsule contains symlinks, which are never exported: {links}")
     lines = []
-    for p in sorted(root.rglob("*")):
-        if p.is_file() and not p.is_symlink():
-            rel = p.relative_to(root).as_posix()
-            if rel != BAGIT_FILE:
-                lines.append(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {rel}")
+    for p in _walk_files(root):
+        rel = p.relative_to(root).as_posix()
+        if rel != BAGIT_FILE:
+            lines.append(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {rel}")
     lines.sort(key=lambda s: s.split("  ", 1)[1])
     path = root / BAGIT_FILE
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

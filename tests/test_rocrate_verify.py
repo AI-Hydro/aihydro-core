@@ -53,6 +53,22 @@ def _regen(d: Path):
     _refresh_bag(d)
 
 
+def _sync_objects(d: Path, paths):
+    """Attacker fixes the manifest entries and bundle objects for edited files (and the manifest's own digest)."""
+    files = scan_files(d)
+    def fix_manifest(m):
+        for e in m["files"]:
+            if e["path"] in paths:
+                e["sha256"], e["size"] = files[e["path"]]["sha256"], files[e["path"]]["size"]
+    _jedit(d / "capsule_manifest.json", fix_manifest)
+    files = scan_files(d)
+    def fix(b):
+        for o in b.objects:
+            if o["ref"] in set(paths) | {"capsule_manifest.json"}:
+                o["digest"], o["size"] = "sha256:" + files[o["ref"]]["sha256"], files[o["ref"]]["size"]
+    _reseal_bundle(d, fix)
+
+
 def test_golden_passes(cap):
     r = verify_crate(cap)
     assert r.ok and r.failures == []
@@ -77,12 +93,7 @@ def test_run_record_field_edit(cap):
 
 def test_run_record_edit_with_everything_else_rewritten_still_fails_the_seal(cap):
     _jedit(cap / "run_log.json", lambda d: d["sigs.1"]["record"].__setitem__("tool_version", "9.9.9"))
-    # attacker also fixes the file digests: bundle objects, manifest, crate, bag
-    files = scan_files(cap)
-    _reseal_bundle(cap, lambda b: [o.update(digest="sha256:" + files["run_log.json"]["sha256"], size=files["run_log.json"]["size"])
-                                   for o in b.objects if o["ref"] == "run_log.json"])
-    _jedit(cap / "capsule_manifest.json", lambda d: [m.update(sha256=files["run_log.json"]["sha256"], size=files["run_log.json"]["size"])
-                                                    for m in d["files"] if m["path"] == "run_log.json"])
+    _sync_objects(cap, {"run_log.json"})
     _regen(cap)
     res = verify_crate(cap)
     assert not res.ok and "VER-RECORD-SEAL" in res.rules and "VER-FILE-DIGEST" not in res.rules
@@ -97,11 +108,7 @@ def test_body_value_edit_uncertainty(cap):
 
 def test_body_value_edit_with_digests_rewritten_still_fails_binding(cap):
     _jedit(cap / "run_log.json", lambda d: d["sigs.1"]["evidence"]["uncertainty"]["baseflow_index"].__setitem__("value", 0.9))
-    files = scan_files(cap)
-    _reseal_bundle(cap, lambda b: [o.update(digest="sha256:" + files["run_log.json"]["sha256"], size=files["run_log.json"]["size"])
-                                   for o in b.objects if o["ref"] == "run_log.json"])
-    _jedit(cap / "capsule_manifest.json", lambda d: [m.update(sha256=files["run_log.json"]["sha256"], size=files["run_log.json"]["size"])
-                                                    for m in d["files"] if m["path"] == "run_log.json"])
+    _sync_objects(cap, {"run_log.json"})
     _regen(cap)
     res = verify_crate(cap)
     assert "VER-BINDING" in res.rules                    # the bundle's binding names the original body
@@ -196,13 +203,14 @@ def test_replay_status_edited_to_recomputed(cap):
     assert "HON-REPLAY-LEVEL" in {f.rule for f in errors(validate_crate(cap))}
 
 
-def test_replay_status_recomputed_in_bundle_is_rejected_by_validator(cap):
+def test_replay_status_recomputed_in_bundle_is_refused_everywhere(cap):
     def edit(b):
         b.replay = {**b.replay, "status": "recomputed", "manifest_status": "recomputed", "checked_status": "recomputed"}
     _reseal_bundle(cap, edit)
-    _regen(cap)
-    assert verify_crate(cap).ok                          # consistent, so verify cannot object ...
-    assert "HON-RECOMPUTED" in {f.rule for f in errors(validate_crate(cap))}   # ... the honesty rule does
+    with pytest.raises(ValueError):                      # the projection will not state it
+        _regen(cap)
+    res = verify_crate(cap)                              # and verify (the one CLI gate) fails on its own
+    assert not res.ok and "VER-REPLAY-MANIFEST" in res.rules
 
 
 def test_injected_absolute_path(cap):

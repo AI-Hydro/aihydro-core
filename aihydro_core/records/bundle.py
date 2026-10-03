@@ -260,6 +260,8 @@ def coverage_complete(c: Optional[Mapping[str, Any]]) -> bool:
 def _check_tool(t: Any, what: str) -> None:
     if not isinstance(t, dict) or not isinstance(t.get("name"), str) or not t["name"]:
         raise BundleError(f"{what} must be a dict with a non-empty string name")
+    if not isinstance(t.get("version"), str) or not t["version"]:
+        raise BundleError(f"{what}.version is required (RO-Crate 1.3 check 32.3: a SoftwareApplication needs a version)")
     if t.get("url") is not None and not (isinstance(t["url"], str) and t["url"]):
         raise BundleError(f"{what}.url must be a non-empty string")
     sha = t.get("sha256")

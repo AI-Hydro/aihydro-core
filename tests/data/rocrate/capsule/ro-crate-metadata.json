@@ -4,6 +4,7 @@
     {
       "aihydro": "https://ai-hydro.invalid/terms/0.1/",
       "aihydro:canonicalization": "https://ai-hydro.invalid/terms/0.1/canonicalization",
+      "aihydro:contentDigest": "https://ai-hydro.invalid/terms/0.1/contentDigest",
       "aihydro:recordDigest": "https://ai-hydro.invalid/terms/0.1/recordDigest",
       "aihydro:recordLocation": "https://ai-hydro.invalid/terms/0.1/recordLocation",
       "aihydro:replayStatus": "https://ai-hydro.invalid/terms/0.1/replayStatus",
@@ -267,7 +268,7 @@
           "@id": "#basin-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a-quality_flags"
         }
       ],
-      "aihydro:recordDigest": "sha256:57642f0def1bdcc6e8821a080c959ad0c5190d31c97655ecaa7ca44dca9a7a2a",
+      "aihydro:contentDigest": "sha256:57642f0def1bdcc6e8821a080c959ad0c5190d31c97655ecaa7ca44dca9a7a2a",
       "aihydro:recordLocation": "run_log.json#/watershed.1/key_outputs/basin_ref",
       "containsPlace": {
         "@id": "#outlet-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
@@ -317,7 +318,7 @@
       "description": "Content digest naming this Bundle: {schema, session_id, objects, records}.",
       "name": "AI-Hydro bundle id",
       "propertyID": "aihydro.bundle_id",
-      "value": "sha256:349f4bafbf8d9f6d229738e88c7960d0192e4a58874c641706e702670b366cce"
+      "value": "sha256:4106608848b392718cebb859c6f5e96f22bc7fde23a0de912400d86d5fcf2d84"
     },
     {
       "@id": "#ci-sigs.1-baseflow_index",
@@ -843,11 +844,11 @@
     {
       "@id": "bundle.json",
       "@type": "File",
-      "contentSize": "7055",
+      "contentSize": "7492",
       "description": "Sealed AI-Hydro Bundle (aihydro.bundle/1): content-addressed objects and located records.",
       "encodingFormat": "application/json",
       "name": "bundle.json",
-      "sha256": "6778e65931739f443445935f3a7e8d43272b42c34782654f56b2f8a4518791d0"
+      "sha256": "008ada6440144bc3692ef633ef22d726f06d7300f1b924e17f335370d66a81e0"
     },
     {
       "@id": "capsule_manifest.json",
@@ -889,6 +890,14 @@
       "name": "Canonicalization",
       "rdfs:comment": "Name of the canonical encoding that the accompanying digest was computed under (for example aihydro.c14n/1, RFC 8785 JCS after tagging). Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
       "rdfs:label": "Canonicalization"
+    },
+    {
+      "@id": "https://ai-hydro.invalid/terms/0.1/contentDigest",
+      "@type": "rdf:Property",
+      "description": "sha256:<hex> digest of the JSON object this entity was projected from. Unlike recordDigest it is not a seal: the object is content-addressed and is trustworthy only because it lies inside a body that is bound to a sealed record.",
+      "name": "Content digest",
+      "rdfs:comment": "sha256:<hex> digest of the JSON object this entity was projected from. Unlike recordDigest it is not a seal: the object is content-addressed and is trustworthy only because it lies inside a body that is bound to a sealed record. Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
+      "rdfs:label": "Content digest"
     },
     {
       "@id": "https://ai-hydro.invalid/terms/0.1/recordDigest",

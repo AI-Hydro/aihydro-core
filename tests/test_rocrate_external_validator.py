@@ -37,3 +37,15 @@ def test_process_run_crate_only_known_version_mismatch(tmp_path):
     issues = _run("process-run-crate", tmp_path)
     required = {i["check"]["identifier"] for i in issues if i["severity"] == "REQUIRED"}
     assert required <= {"ro-crate-1.1_5.3"}          # descriptor must conformTo RO-Crate 1.1 (0.5 rules vs 0.6/1.3)
+
+
+def test_real_shape_crate_without_tool_versions_has_no_required_issues(tmp_path):
+    """Records without tool_version must still give every SoftwareApplication a version (check 32.3)."""
+    from tests.rocrate_fixture import build_capsule
+    d = tmp_path / "c"
+    build_capsule(d, tool_version=None)
+    out = tmp_path / "v.json"
+    subprocess.run([BIN, "validate", "-p", "ro-crate-1.3", "-l", "recommended", "--no-paging", "--output-format", "json",
+                    "--output-file", str(out), str(d)], stdin=subprocess.DEVNULL, capture_output=True, text=True)
+    required = [i["check"]["identifier"] for i in json.loads(out.read_text())["issues"] if i["severity"] == "REQUIRED"]
+    assert required == []

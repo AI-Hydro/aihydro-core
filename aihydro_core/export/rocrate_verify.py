@@ -37,7 +37,9 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 from aihydro_core.export.rocrate import (
     BAGIT_FILE,
     CRATE_FILE,
+    derive_gates,
     dumps_crate,
+    find_symlinks,
     load_inputs,
     scan_files,
     to_rocrate,
@@ -48,8 +50,11 @@ from aihydro_core.records import (
     BundleError,
     ClaimRevision,
     basin_id_from_anchor,
+    coverage_complete,
     digest,
     entry_digest,
+    read_legacy_replay_status,
+    replay_rank,
     resolve_location,
     split_location,
     verify_basin_ref_dict,
@@ -61,6 +66,9 @@ from aihydro_core.records import (
 
 BUNDLE_FILE = "bundle.json"
 MANIFEST_FILE = "capsule_manifest.json"
+VERIFIER_FILE = "replay.py"
+#: Files that are not bundle objects: the bundle itself, the crate and the bag manifest.
+NON_OBJECT_FILES = (BUNDLE_FILE, CRATE_FILE, BAGIT_FILE)
 
 
 class Failure:
@@ -137,8 +145,12 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         res.fail("VER-BUNDLE-SEAL", "bundle record_digest does not match its content")
 
     # ---- 2. objects and files
-    files = scan_files(root)
+    for link in find_symlinks(root):
+        res.fail("VER-UNLISTED-FILE", "symlinks are never part of a capsule", link)
+    files = scan_files(root, strict=False)
     objects = {o["ref"]: o for o in bundle.objects}
+    for path in sorted(set(files) - set(objects) - set(NON_OBJECT_FILES)):
+        res.fail("VER-UNLISTED-FILE", "file is in the capsule but is not a bundle object (remove it, or re-export)", path)
     for ref, o in sorted(objects.items()):
         f = files.get(ref)
         if f is None:
@@ -146,16 +158,50 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         elif "sha256:" + f["sha256"] != o["digest"] or f["size"] != o["size"]:
             res.fail("VER-FILE-DIGEST", "file bytes differ from the digest/size the bundle sealed", ref)
     manifest_path = root / MANIFEST_FILE
+    manifest: Any = None
     if manifest_path.is_file():
         try:
-            listed = {m["path"]: ("sha256:" + m["sha256"], m["size"]) for m in _read_json(manifest_path)["files"]}
+            manifest = _read_json(manifest_path)
+            listed = {m["path"]: ("sha256:" + m["sha256"], m["size"]) for m in manifest["files"]}
         except (OSError, ValueError, KeyError, TypeError) as exc:
+            manifest = None
             res.fail("VER-OBJECTS-MANIFEST", f"cannot read files from {MANIFEST_FILE}: {exc}")
         else:
+            # objects == manifest files + the manifest itself + the verifier, exactly (M3)
             mine = {r: (o["digest"], o["size"]) for r, o in objects.items()}
             for path in sorted(set(listed) | set(mine)):
+                if path in (MANIFEST_FILE, VERIFIER_FILE):
+                    continue
                 if listed.get(path) != mine.get(path):
                     res.fail("VER-OBJECTS-MANIFEST", "bundle.objects and the manifest files disagree", path)
+            for path in (MANIFEST_FILE, VERIFIER_FILE):
+                if path not in objects:
+                    res.fail("VER-OBJECTS-MANIFEST", f"{path} must be a bundle object (it carries the capsule's "
+                                                     "self-description or verifier)", path)
+    else:
+        res.fail("VER-OBJECTS-MANIFEST", f"{MANIFEST_FILE} is missing")
+    # the verifier the crate names must be a file in this capsule
+    sha = (bundle.replay or {}).get("assessor", {}).get("sha256") if isinstance((bundle.replay or {}).get("assessor"), dict) else None
+    if sha and not any(f["sha256"] == sha for f in files.values()):
+        res.fail("VER-ASSESSOR", "replay.assessor.sha256 matches no file in the capsule")
+
+    # ---- 2b. replay level is anchored to the on-disk manifest and to what was checked (M1)
+    rp = bundle.replay or {}
+    try:
+        level_rank = replay_rank(rp["status"])
+        if level_rank > replay_rank(rp["checked_status"]) or level_rank > replay_rank(rp["manifest_status"]):
+            res.fail("VER-REPLAY-MANIFEST", "replay.status exceeds replay.manifest_status or replay.checked_status")
+        if manifest is not None:
+            m_level, m_complete = read_legacy_replay_status(manifest.get("replay_status"))
+            if rp["manifest_status"] != m_level.value:
+                res.fail("VER-REPLAY-MANIFEST",
+                         f"replay.manifest_status {rp['manifest_status']!r} differs from the manifest's {m_level.value!r}")
+            if level_rank > replay_rank(m_level):
+                res.fail("VER-REPLAY-MANIFEST", "replay.status exceeds the level the on-disk manifest states")
+            if not m_complete and coverage_complete(bundle.coverage):
+                res.fail("VER-REPLAY-MANIFEST", "the manifest states a partial result but the bundle claims complete coverage")
+    except (KeyError, ValueError) as exc:
+        res.fail("VER-REPLAY-MANIFEST", f"cannot establish the replay level: {exc!r}")
 
     # ---- 3. records
     docs: Dict[str, Any] = {}
@@ -181,6 +227,7 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
 
     not_ok: Dict[Tuple[str, str], Tuple[str, str]] = {}   # (kind,id) -> (rule, reason)
     revisions: Dict[str, List[Tuple[Tuple[str, str], Dict[str, Any]]]] = {}
+    content_checks: List[Tuple[str, str]] = []
 
     for e in bundle.records:
         kind, eid = e["kind"], e["id"]
@@ -214,6 +261,11 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                 not_ok[key] = ("VER-RECORD-DIGEST", "record_digest differs from the bundle entry")
             elif rec.get("run_id") != eid:
                 not_ok[key] = ("VER-RECORD-DIGEST", "record run_id differs from the bundle entry id")
+            elif e.get("binding") is not None and (
+                    not isinstance(rec.get("extra"), dict)
+                    or rec["extra"].get("entry_digest") != e["binding"]["digest"]):
+                not_ok[key] = ("VER-BINDING", "the declared binding is not the sealed one: the record's "
+                                              "extra.entry_digest is missing or differs from the binding digest")
             elif body is not None and isinstance(rec.get("extra"), dict) and rec["extra"].get("entry_digest") \
                     and entry_digest(body) != rec["extra"]["entry_digest"]:
                 not_ok[key] = ("VER-BINDING", "body does not match the sealed extra.entry_digest")
@@ -229,9 +281,25 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         elif kind == "basin_ref":
             if digest(rec) != e["record_digest"] or not _basin_id_ok(rec) or rec.get("id") != eid:
                 not_ok[key] = ("VER-RECORD-SEAL", "basin reference does not verify (digest, anchor id)")
-        else:  # approval and any later sealed kind: content digest only
+            else:
+                content_checks.append(key)
+        else:  # approval and any later content-addressed kind: content digest only
             if digest(rec) != e["record_digest"]:
                 not_ok[key] = ("VER-RECORD-SEAL", "content digest differs from the bundle entry")
+            else:
+                content_checks.append(key)
+
+    # content-addressed kinds (basin_ref, approval) are not seals: they must lie inside a run body
+    # that is bound to a sealed record that verified in this same pass (S1)
+    bound_prefixes = []
+    for e in bundle.records:
+        if e["kind"] == "run" and ("run", e["id"]) not in not_ok and e.get("binding") and e.get("body_location"):
+            bound_prefixes.append(split_location(e["body_location"]))
+    for key in content_checks:
+        path, toks = split_location(next(x for x in bundle.records if (x["kind"], x["id"]) == key)["record_location"])
+        if not any(path == bp and toks[:len(bt)] == bt for bp, bt in bound_prefixes):
+            not_ok[key] = ("VER-RECORD-SEAL", "content-addressed record does not lie inside a body bound to a "
+                                              "verified sealed record")
 
     for claim_id, items in sorted(revisions.items()):
         items.sort(key=lambda it: it[1]["revision"])
@@ -261,6 +329,18 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                  f"declared coverage {cov.get('records_verified')}/{cov.get('records_total')} "
                  f"{declared} differs from recomputed {res.records_verified}/{res.records_total} {bad_ids}")
 
+    # ---- 4b. gates are derived from verified bodies; the declared list must equal them (S2)
+    try:
+        recs_g, bods_g, _f = load_inputs(root, bundle, strict=False)
+        derived = {(g["run_id"], g["code"]) for g in derive_gates(bundle, recs_g, bods_g)
+                   if ("run", g["run_id"]) not in not_ok}
+        declared_g = {(g["run_id"], g["code"]) for g in (bundle.gates or [])}
+        if derived != declared_g:
+            res.fail("VER-GATES", f"declared gates {sorted(declared_g)} differ from gates derived from the "
+                                  f"verified row bodies {sorted(derived)}")
+    except Exception as exc:  # pragma: no cover - defensive
+        res.fail("VER-GATES", f"cannot derive gates: {exc!r}")
+
     # ---- 5. crate regeneration
     crate_path = root / CRATE_FILE
     if not crate_path.is_file():
@@ -278,7 +358,7 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         except (ValueError, AttributeError):
             pass
         try:
-            records, bodies, files_now = load_inputs(root, bundle)
+            records, bodies, files_now = load_inputs(root, bundle, strict=False)
             regenerated = dumps_crate(to_rocrate(bundle, records, bodies, files_now, license=license_value)).encode("utf-8")
         except Exception as exc:
             res.fail("VER-CRATE-REGEN", f"crate could not be regenerated: {type(exc).__name__}: {exc}")
@@ -291,6 +371,12 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                          f"(first difference at line {at + 1}: shipped {b[at].strip()[:80]!r} vs regenerated "
                          f"{a[at].strip()[:80] if at < len(a) else '<end>'!r})")
 
+    # ---- 5b. the structural/honesty validator is part of verification: one gate
+    from aihydro_core.export.rocrate_validate import errors as _verrors
+    from aihydro_core.export.rocrate_validate import validate_crate
+    for f in _verrors(validate_crate(root)):
+        res.fail("VER-VALIDATE", f"{f.rule}: {f.message}", f.entity)
+
     # ---- 6. BagIt-style manifest
     bag = root / BAGIT_FILE
     if bag.is_file():
@@ -300,7 +386,7 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                 continue
             h, _, p = line.partition("  ")
             listed_bag[p] = h
-        actual = {p: f["sha256"] for p, f in scan_files(root).items()}
+        actual = {p: f["sha256"] for p, f in scan_files(root, strict=False).items()}
         if crate_path.is_file():
             actual[CRATE_FILE] = hashlib.sha256(crate_path.read_bytes()).hexdigest()
         for p in sorted(set(listed_bag) | set(actual)):

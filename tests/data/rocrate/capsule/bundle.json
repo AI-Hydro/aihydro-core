@@ -1,5 +1,5 @@
 {
-  "bundle_id": "sha256:349f4bafbf8d9f6d229738e88c7960d0192e4a58874c641706e702670b366cce",
+  "bundle_id": "sha256:4106608848b392718cebb859c6f5e96f22bc7fde23a0de912400d86d5fcf2d84",
   "canonicalization": "aihydro.c14n/1",
   "coverage": {
     "records_total": 12,
@@ -27,6 +27,13 @@
       "size": 52
     },
     {
+      "digest": "sha256:08ff2c9553fca6167b2b42fa96c7d690080050b81a5ed4dff831d9746ac39f60",
+      "media_type": "application/json",
+      "ref": "capsule_manifest.json",
+      "role": "manifest",
+      "size": 1021
+    },
+    {
       "digest": "sha256:9c4960fc26d973380d73ddfdea3459dbf08d88c2e460ac9a7285638d33e436ee",
       "license": "CC0-1.0",
       "media_type": "text/csv",
@@ -50,6 +57,13 @@
       "size": 4267
     },
     {
+      "digest": "sha256:fff3adf566fc9cee1243723eb5dca379ed2118d15a0367a012fc29e3f216dcab",
+      "media_type": "text/x-python",
+      "ref": "replay.py",
+      "role": "verifier",
+      "size": 53
+    },
+    {
       "digest": "sha256:3f4fba03314d2f4a989f251f314a74555a21e7e874399e54446a8778d37950f5",
       "media_type": "application/json",
       "ref": "run_log.json",
@@ -64,7 +78,7 @@
       "size": 601
     }
   ],
-  "record_digest": "sha256:5dd2da5b98e4ac4523cdf3160f30fd71e63264c20a3ec803eafc781e23607a5e",
+  "record_digest": "sha256:2a5fcc294d970d050736164b774e7cc6dd25aac4159c1ef4a3f2feda54c95fb3",
   "records": [
     {
       "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",

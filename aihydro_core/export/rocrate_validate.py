@@ -36,6 +36,8 @@ _PROV = "https://www.w3.org/TR/prov-o/"
 
 #: Marker type of a recomputation entity (G6). The builder never emits one.
 RECOMPUTATION_TYPE = PROFILE_NS + "Recomputation"
+#: Marker type of a cross-check entity. The builder never emits one either.
+CROSSCHECK_TYPE = PROFILE_NS + "CrossCheck"
 
 RULES: Dict[str, str] = {
     "RC-JSON": f"{_RC}/appendix/jsonld.html",
@@ -47,6 +49,9 @@ RULES: Dict[str, str] = {
                   f"{_RC}/profiles.html",
     "RC-SOFTWARE-URL": "rocrate-validator ro-crate-1.3 check 32.2 (SoftwareApplication MUST have a url); "
                        f"{_RC}/contextual-entities.html#software",
+    "RC-SOFTWARE-VERSION": "rocrate-validator ro-crate-1.3 check 32.3 (SoftwareApplication MUST have a version); "
+                           f"{_RC}/contextual-entities.html#software",
+    "HON-CROSSCHECK": "ADR-005 (cross_check means retained values were compared across stores); plan section 4",
     "RC-DESCRIPTOR": f"{_RC}/root-data-entity.html#ro-crate-metadata-descriptor",
     "RC-ROOT": f"{_RC}/root-data-entity.html#direct-properties-of-the-root-data-entity",
     "RC-FLAT": f"{_RC}/appendix/jsonld.html#flattened-json-ld",
@@ -257,6 +262,8 @@ def validate_graph(crate: Any, directory: "str | Path | None" = None) -> List[Fi
     for sid, s in ents.items():
         if "SoftwareApplication" in _types(s) and not s.get("url"):
             err("RC-SOFTWARE-URL", "a SoftwareApplication must have a url", sid)
+        if "SoftwareApplication" in _types(s) and not (s.get("version") or s.get("softwareVersion")):
+            err("RC-SOFTWARE-VERSION", "a SoftwareApplication must have a version", sid)
         if "SoftwareApplication" in _types(s) and "version" in s and "softwareVersion" in s:
             err("PRC-ACTION", "SoftwareApplication must not have both version and softwareVersion", sid)
 
@@ -318,6 +325,11 @@ def validate_graph(crate: Any, directory: "str | Path | None" = None) -> List[Fi
     if level is not None and replay_rank(level) >= replay_rank(ReplayStatus.RECOMPUTED):
         if not any(RECOMPUTATION_TYPE in _as_list(e.get("additionalType")) for e in ents.values()):
             err("HON-RECOMPUTED", f"{level.value} requires a recomputation entity (additionalType {RECOMPUTATION_TYPE}); none exists",
+                root["@id"])
+    if level is not None and replay_rank(level) >= replay_rank(ReplayStatus.CROSS_CHECK):
+        if not any(CROSSCHECK_TYPE in _as_list(e.get("additionalType")) or RECOMPUTATION_TYPE in _as_list(e.get("additionalType"))
+                   for e in ents.values()):
+            err("HON-CROSSCHECK", f"{level.value} requires a cross-check (or recomputation) entity; none exists",
                 root["@id"])
     if level is not None and replay_rank(level) >= replay_rank(ReplayStatus.ARCHIVE_INTEGRITY):
         cov = pv_by_prop.get("records_verified")

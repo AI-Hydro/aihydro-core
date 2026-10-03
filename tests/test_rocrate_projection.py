@@ -173,7 +173,8 @@ def test_replay_assess_action_and_root_mirror(cap):
 def test_terms_are_defined_in_graph_under_one_namespace(cap):
     g = _graph(cap)
     used = {k for e in g.values() for k in e if k.startswith("aihydro:")}
-    assert used == {"aihydro:canonicalization", "aihydro:recordDigest", "aihydro:recordLocation", "aihydro:replayStatus"}
+    assert used == {"aihydro:canonicalization", "aihydro:contentDigest", "aihydro:recordDigest",
+                    "aihydro:recordLocation", "aihydro:replayStatus"}
     for t in used:
         d = g[rc.PROFILE_NS + t.split(":")[1]]
         assert d["@type"] == "rdf:Property" and all(d[k] for k in ("name", "description", "rdfs:label", "rdfs:comment"))
