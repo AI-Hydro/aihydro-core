@@ -573,9 +573,14 @@ def to_rocrate(
         if kind == "claim_revision":
             cid, _, rev = eid.rpartition("@")
             cent = frag("claim", cid, f"rev{rev}")
-            if eid in unverifiable or rec_of("claim_revision", eid) is None:
-                bp = basis_pv(cent, "sealed_revision", "Sealed revision whose record could not be verified or was withheld.")
-                g.add({"@id": cent, "@type": "Claim", "name": f"Claim {cid} revision {rev} (unverifiable)",
+            failed_store = rev == "failed-store"
+            if failed_store or eid in unverifiable or rec_of("claim_revision", eid) is None:
+                bp = basis_pv(cent, "sealed_revision",
+                              "The claim's revision store failed verification at export; no revision from it is carried."
+                              if failed_store else "Sealed revision whose record could not be verified or was withheld.")
+                g.add({"@id": cent, "@type": "Claim",
+                       "name": (f"Claim {cid} (revision store failed verification at export)" if failed_store
+                                else f"Claim {cid} revision {rev} (unverifiable)"),
                        "version": int(rev) if rev.isdigit() else None, "additionalProperty": ref(bp),
                        "aihydro:recordDigest": e["record_digest"], "aihydro:recordLocation": e["record_location"]})
             else:
@@ -644,6 +649,12 @@ def to_rocrate(
     level = rp["status"]
     cov_text = (f"{cov['records_verified']} of {cov['records_total']} sealed records verified"
                 + ("" if complete else f"; partial coverage, unverifiable: {', '.join(cov['unverifiable_ids'])}"))
+    rr = bundle.run_rows
+    if rr:
+        cov_text += (f"; {rr['run_log_rows']} run-log rows: {rr['sealed']} with a sealed record, "
+                     f"{rr['legacy_no_record']} without one{' (unsealed)' if rr['legacy_no_record'] else ''}, "
+                     f"{rr['unbound']} sealed but unbound{' (unsealed body)' if rr['unbound'] else ''}, "
+                     f"{rr['withheld_for_privacy']} withheld")
     pvs = [g.add(_pv(frag("replay", "level"), "replay status", level, property_id="replayStatus",
                      description="Strongest replay level the exporter actually performed.")),
            g.add(_pv(frag("replay", "manifest-level"), "manifest replay status",
@@ -655,6 +666,13 @@ def to_rocrate(
            g.add(_pv(frag("replay", "coverage"), "record coverage", cov["records_verified"],
                      property_id="records_verified", description=cov_text,
                      maxValue=cov["records_total"]))]
+    for key, label in (("run_log_rows", "run-log rows"), ("legacy_no_record", "run-log rows without a sealed record"),
+                       ("unbound", "sealed run-log rows whose body is not bound"),
+                       ("withheld_for_privacy", "run-log rows withheld for privacy")):
+        if rr:
+            pvs.append(g.add(_pv(frag("replay", key), label, rr[key], property_id=key,
+                                 description="Counts from the exporter's run-log scan; rows without a sealed record "
+                                             "or without a bound body are unsealed.")))
     replay_id = frag("assess", "replay")
     g.add({"@id": replay_id, "@type": "AssessAction", "name": "Replay assessment",
            "description": (f"Self-assessed by the exporter at export time, not by an independent party. "

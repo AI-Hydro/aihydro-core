@@ -227,7 +227,7 @@
       "@id": "#assess-replay",
       "@type": "AssessAction",
       "actionStatus": "http://schema.org/CompletedActionStatus",
-      "description": "Self-assessed by the exporter at export time, not by an independent party. Level archive_integrity: 12 of 12 sealed records verified. Complete. This is an integrity check; nothing was recomputed. Integrity is not origin: digests and seals show that content is unchanged since it was sealed; they do not establish who produced it.",
+      "description": "Self-assessed by the exporter at export time, not by an independent party. Level archive_integrity: 12 of 12 sealed records verified; 8 run-log rows: 8 with a sealed record, 0 without one, 0 sealed but unbound, 0 withheld. Complete. This is an integrity check; nothing was recomputed. Integrity is not origin: digests and seals show that content is unchanged since it was sealed; they do not establish who produced it.",
       "endTime": "2026-10-03T12:00:00+00:00",
       "instrument": {
         "@id": "#tool-verifier"
@@ -244,10 +244,22 @@
           "@id": "#replay-coverage"
         },
         {
+          "@id": "#replay-legacy_no_record"
+        },
+        {
           "@id": "#replay-level"
         },
         {
           "@id": "#replay-manifest-level"
+        },
+        {
+          "@id": "#replay-run_log_rows"
+        },
+        {
+          "@id": "#replay-unbound"
+        },
+        {
+          "@id": "#replay-withheld_for_privacy"
         }
       ]
     },
@@ -628,11 +640,19 @@
     {
       "@id": "#replay-coverage",
       "@type": "PropertyValue",
-      "description": "12 of 12 sealed records verified",
+      "description": "12 of 12 sealed records verified; 8 run-log rows: 8 with a sealed record, 0 without one, 0 sealed but unbound, 0 withheld",
       "maxValue": 12,
       "name": "record coverage",
       "propertyID": "records_verified",
       "value": 12
+    },
+    {
+      "@id": "#replay-legacy_no_record",
+      "@type": "PropertyValue",
+      "description": "Counts from the exporter's run-log scan; rows without a sealed record or without a bound body are unsealed.",
+      "name": "run-log rows without a sealed record",
+      "propertyID": "legacy_no_record",
+      "value": 0
     },
     {
       "@id": "#replay-level",
@@ -649,6 +669,30 @@
       "name": "manifest replay status",
       "propertyID": "manifestStatus",
       "value": "archive_integrity"
+    },
+    {
+      "@id": "#replay-run_log_rows",
+      "@type": "PropertyValue",
+      "description": "Counts from the exporter's run-log scan; rows without a sealed record or without a bound body are unsealed.",
+      "name": "run-log rows",
+      "propertyID": "run_log_rows",
+      "value": 8
+    },
+    {
+      "@id": "#replay-unbound",
+      "@type": "PropertyValue",
+      "description": "Counts from the exporter's run-log scan; rows without a sealed record or without a bound body are unsealed.",
+      "name": "sealed run-log rows whose body is not bound",
+      "propertyID": "unbound",
+      "value": 0
+    },
+    {
+      "@id": "#replay-withheld_for_privacy",
+      "@type": "PropertyValue",
+      "description": "Counts from the exporter's run-log scan; rows without a sealed record or without a bound body are unsealed.",
+      "name": "run-log rows withheld for privacy",
+      "propertyID": "withheld_for_privacy",
+      "value": 0
     },
     {
       "@id": "#source-aihydro-data-precipitation-router-gridme-4712902d",
@@ -756,7 +800,7 @@
         "@id": "https://w3id.org/ro/wfrun/process/0.6"
       },
       "datePublished": "2026-10-03T12:00:00Z",
-      "description": "Deterministic RO-Crate projection of a sealed AI-Hydro Bundle. Integrity is not origin: digests and seals show that content is unchanged since it was sealed; they do not establish who produced it. Replay level: archive_integrity (12 of 12 sealed records verified); see the replay assessment.",
+      "description": "Deterministic RO-Crate projection of a sealed AI-Hydro Bundle. Integrity is not origin: digests and seals show that content is unchanged since it was sealed; they do not establish who produced it. Replay level: archive_integrity (12 of 12 sealed records verified; 8 run-log rows: 8 with a sealed record, 0 without one, 0 sealed but unbound, 0 withheld); see the replay assessment.",
       "hasPart": [
         {
           "@id": "README.md"
@@ -844,11 +888,11 @@
     {
       "@id": "bundle.json",
       "@type": "File",
-      "contentSize": "7492",
+      "contentSize": "7649",
       "description": "Sealed AI-Hydro Bundle (aihydro.bundle/1): content-addressed objects and located records.",
       "encodingFormat": "application/json",
       "name": "bundle.json",
-      "sha256": "008ada6440144bc3692ef633ef22d726f06d7300f1b924e17f335370d66a81e0"
+      "sha256": "43aa548479cd4e333605404a0170b71d7a9f117be84c81ab927ee60166c122d1"
     },
     {
       "@id": "capsule_manifest.json",

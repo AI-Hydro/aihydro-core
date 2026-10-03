@@ -62,7 +62,7 @@ GATE_OUTCOMES = ("refused", "error")
 _IDENTITY_FIELDS = ("schema", "session_id", "objects", "records")
 _KNOWN_FIELDS = (
     "schema", "canonicalization", "session_id", "objects", "records", "bundle_id",
-    "created_at", "exporter", "replay", "coverage", "gates", "effective_tier", "record_digest",
+    "created_at", "exporter", "replay", "coverage", "run_rows", "gates", "effective_tier", "record_digest",
 )
 
 
@@ -252,6 +252,26 @@ def _check_coverage(c: Any) -> None:
         raise BundleError("coverage.unverifiable_ids must name exactly the unverified records")
 
 
+RUN_ROW_KEYS = ("run_log_rows", "sealed", "legacy_no_record", "unbound", "unsealable", "withheld_for_privacy")
+
+
+def make_run_rows(**counts: int) -> Dict[str, int]:
+    """``run_rows``: how the run-log rows split into sealed and unsealed ones (all six keys)."""
+    rr = {k: counts.get(k, 0) for k in RUN_ROW_KEYS}
+    _check_run_rows(rr)
+    return rr
+
+
+def _check_run_rows(r: Any) -> None:
+    if not isinstance(r, dict) or set(r) != set(RUN_ROW_KEYS):
+        raise BundleError(f"run_rows must be a dict with exactly the keys {RUN_ROW_KEYS}")
+    for k, v in r.items():
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise BundleError(f"run_rows.{k} must be an int >= 0")
+    if r["run_log_rows"] != r["sealed"] + r["legacy_no_record"] + r["withheld_for_privacy"]:
+        raise BundleError("run_rows.run_log_rows must equal sealed + legacy_no_record + withheld_for_privacy")
+
+
 def coverage_complete(c: Optional[Mapping[str, Any]]) -> bool:
     """True iff every counted record was verified."""
     return bool(c) and c["records_verified"] == c["records_total"]
@@ -321,6 +341,7 @@ class Bundle:
     exporter: Optional[Dict[str, Any]] = None
     replay: Optional[Dict[str, Any]] = None
     coverage: Optional[Dict[str, Any]] = None
+    run_rows: Optional[Dict[str, int]] = None
     gates: Optional[List[Dict[str, Any]]] = None
     effective_tier: Optional[str] = None
     schema: str = BUNDLE_SCHEMA
@@ -350,6 +371,8 @@ class Bundle:
             _check_replay(self.replay)
         if self.coverage is not None:
             _check_coverage(self.coverage)
+        if self.run_rows is not None:
+            _check_run_rows(self.run_rows)
         if self.gates is not None:
             _check_gates(self.gates)
 

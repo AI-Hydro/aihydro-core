@@ -346,6 +346,11 @@ def validate_graph(crate: Any, directory: "str | Path | None" = None) -> List[Fi
         else:
             partial = cov["value"] < cov["maxValue"]
             texts = " ".join(str(x.get("description", "")) for x in (assess + [cov]))
+            unsealed_rows = sum(int(pv_by_prop[k].get("value", 0)) for k in ("legacy_no_record", "unbound")
+                                if k in pv_by_prop and isinstance(pv_by_prop[k].get("value"), int))
+            if unsealed_rows > 0 and "unsealed" not in texts.lower():
+                err("HON-COVERAGE", f"{unsealed_rows} run-log rows are unsealed but the assessment does not say so",
+                    root["@id"])
             if partial and "partial" not in texts.lower():
                 err("HON-COVERAGE", "coverage is below 1 but the assessment description does not say 'partial'", root["@id"])
     if "Integrity is not origin" not in str(root.get("description", "")):

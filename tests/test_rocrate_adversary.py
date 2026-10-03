@@ -381,3 +381,133 @@ def test_n3_fifo_in_capsule_fails_and_is_never_opened(cap):
         scan_files(cap)
     with pytest.raises(ValueError):
         rc.write_manifest_sha256(cap)
+
+
+# ------------------------------------------------------------ C1: VER-SESSION
+def _edit_run_session(cap, run_id, value):
+    rl = json.loads((cap / "run_log.json").read_text())
+    rec = rl[run_id]["record"]
+    if value is None:
+        rec.pop("session_id")
+    else:
+        rec["session_id"] = value
+    rec.pop("record_digest")
+    rl[run_id]["record"] = RunRecord.from_dict(rec).seal().to_dict()
+    (cap / "run_log.json").write_text(json.dumps(rl, indent=2, sort_keys=True) + "\n")
+
+    def fix(b):
+        for r in b.records:
+            if r["kind"] == "run" and r["id"] == run_id:
+                r["record_digest"] = rl[run_id]["record"]["record_digest"]
+    _reseal_bundle(cap, fix)
+    _sync_objects(cap, {"run_log.json"})
+
+
+@pytest.mark.parametrize("value", ["someone-elses-session", None])
+def test_c1_run_record_session_must_equal_bundle_session(cap, value):
+    _edit_run_session(cap, "claim.1", value)               # a validly re-sealed record from another/no session
+    res = verify_crate(cap)
+    assert "VER-SESSION" in res.rules and not res.ok
+    assert any(f.entity == "run:claim.1" for f in res.failures if f.rule == "VER-SESSION")
+
+
+def test_c1_claim_revision_session_and_unsealed_kinds_skipped(cap):
+    from aihydro_core.records import ClaimRevision
+    revs = json.loads((cap / "records/claim_revisions.json").read_text())
+    r = dict(revs[1])
+    r.pop("record_digest")
+    r["session_id"] = "other"
+    revs[1] = ClaimRevision.from_dict(r).seal().to_dict()
+    (cap / "records/claim_revisions.json").write_text(json.dumps(revs, indent=2, sort_keys=True) + "\n")
+
+    def fix(b):
+        for e in b.records:
+            if e["id"] == f"{CLAIM_ID}@1":
+                e["record_digest"] = revs[1]["record_digest"]
+    _reseal_bundle(cap, fix)
+    _sync_objects(cap, {"records/claim_revisions.json"})
+    res = verify_crate(cap)
+    assert "VER-SESSION" in res.rules
+    # the working view (unsealed kind) has no session check: the golden passes
+    assert verify_crate(GOLDEN).ok
+
+
+def test_c1_declared_unverifiable_session_mismatch_is_only_a_note(tmp_path):
+    d = tmp_path / "c"
+    build_capsule(d, redact=["claim.1"])
+    # redacted stubs keep the record; a mismatching session there is declared, so a note, not a failure
+    _edit_run_session(d, "claim.1", "other")
+    res = verify_crate(d)
+    assert not any(f.rule == "VER-SESSION" for f in res.failures)
+
+
+# ------------------------------------------------------------- C2: run_rows
+def test_c2_run_rows_validation_and_seal_compatibility():
+    from aihydro_core.records import BundleError, make_run_rows
+    good = make_run_rows(run_log_rows=5, sealed=3, legacy_no_record=1, unbound=1, unsealable=1, withheld_for_privacy=1)
+    assert set(good) == {"run_log_rows", "sealed", "legacy_no_record", "unbound", "unsealable", "withheld_for_privacy"}
+    for bad in ({"run_log_rows": 5, "sealed": 3, "legacy_no_record": 1, "unbound": 0, "unsealable": 0,
+                 "withheld_for_privacy": 0},                                   # sum mismatch
+                {"run_log_rows": 1, "sealed": 1}, {**good, "sealed": -1}, {**good, "extra": 1}):
+        with pytest.raises(BundleError):
+            Bundle(session_id="s", run_rows=bad)
+    # promoting the field from "unknown" does not change any seal (c14n sorts keys)
+    b = Bundle.from_dict(json.loads((GOLDEN / "bundle.json").read_text()))
+    d = b.to_dict()
+    assert d["run_rows"] == b.run_rows
+    old_style = {k: v for k, v in d.items() if k != "run_rows"}
+    legacy = Bundle(session_id=old_style["session_id"], objects=old_style["objects"], records=old_style["records"],
+                    created_at=old_style["created_at"], exporter=old_style["exporter"], replay=old_style["replay"],
+                    coverage=old_style["coverage"], gates=old_style["gates"], unknown={"run_rows": dict(b.run_rows)})
+    assert legacy.seal().record_digest == b.record_digest and legacy.bundle_id == b.bundle_id
+
+
+def test_c2_crate_projects_run_rows_and_says_unsealed(cap):
+    def edit(b):
+        b.run_rows = {"run_log_rows": 11, "sealed": 8, "legacy_no_record": 2, "unbound": 1, "unsealable": 0,
+                      "withheld_for_privacy": 1}
+        b.records = b.records
+    # 11 rows = 8 + 2 + 1; the bundle lists 8 run entries, so this stays consistent
+    _reseal_bundle(cap, edit)
+    _regen(cap)
+    g = _crate(cap)
+    pvs = {e["propertyID"]: e["value"] for e in g.values() if e.get("propertyID") in
+           ("run_log_rows", "legacy_no_record", "unbound", "withheld_for_privacy")}
+    assert pvs == {"run_log_rows": 11, "legacy_no_record": 2, "unbound": 1, "withheld_for_privacy": 1}
+    text = g["#assess-replay"]["description"]
+    assert "11 run-log rows: 8 with a sealed record, 2 without one (unsealed)" in text and "1 withheld" in text
+    assert verify_crate(cap).ok and errors(validate_crate(cap)) == []
+
+
+def test_c2_verify_run_rows_sealed_must_equal_run_entries(cap):
+    _reseal_bundle(cap, lambda b: setattr(b, "run_rows", {"run_log_rows": 9, "sealed": 9, "legacy_no_record": 0,
+                                                          "unbound": 0, "unsealable": 0, "withheld_for_privacy": 0}))
+    _regen(cap)
+    assert "VER-RUN-ROWS" in _rules(cap)
+
+
+def test_c2_validator_requires_unsealed_wording(cap):
+    crate = _crate_dict(cap)
+    for e in crate["@graph"]:
+        if e.get("propertyID") == "legacy_no_record":
+            e["value"] = 3
+    assert "HON-COVERAGE" in {f.rule for f in errors(validate_graph(crate, cap))}
+    for e in crate["@graph"]:
+        if e["@id"] == "#assess-replay":
+            e["description"] += " 3 run-log rows are unsealed."
+    assert "HON-COVERAGE" not in {f.rule for f in errors(validate_graph(crate, cap))}
+
+
+def test_t2_failed_store_claim_stub_says_so(cap):
+    stub_digest = digest({"status": "error", "error": "chain broken"})
+    def edit(b):
+        from aihydro_core.records import make_record_entry
+        b.records.append(make_record_entry("claim_revision", f"{CLAIM_ID}@failed-store", stub_digest,
+                                           "records/claim_revisions.json#/0"))
+        b.coverage = {"records_verified": 12, "records_total": 13, "unverifiable_ids": [f"{CLAIM_ID}@failed-store"]}
+    _reseal_bundle(cap, edit)
+    _regen(cap)
+    g = _crate(cap)
+    stub = g[f"#claim-{CLAIM_ID}-revfailed-store"]
+    assert "failed verification at export" in stub["name"]
+    assert "failed verification at export" in g[stub["additionalProperty"]["@id"]]["description"]

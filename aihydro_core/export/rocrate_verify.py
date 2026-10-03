@@ -268,6 +268,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                 not_ok[key] = ("VER-RECORD-SEAL", "run record seal does not verify")
             elif rec.get("record_digest") != e["record_digest"]:
                 not_ok[key] = ("VER-RECORD-DIGEST", "record_digest differs from the bundle entry")
+            elif rec.get("session_id") != bundle.session_id:
+                not_ok[key] = ("VER-SESSION", "record session_id is missing or differs from the bundle's session_id")
             elif rec.get("run_id") != eid:
                 not_ok[key] = ("VER-RECORD-DIGEST", "record run_id differs from the bundle entry id")
             elif e.get("binding") is not None and (
@@ -283,6 +285,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                 not_ok[key] = ("VER-RECORD-SEAL", "claim revision seal does not verify")
             elif rec.get("record_digest") != e["record_digest"]:
                 not_ok[key] = ("VER-RECORD-DIGEST", "record_digest differs from the bundle entry")
+            elif rec.get("session_id") != bundle.session_id:
+                not_ok[key] = ("VER-SESSION", "record session_id is missing or differs from the bundle's session_id")
             elif eid != f"{rec.get('claim_id')}@{rec.get('revision')}":
                 not_ok[key] = ("VER-RECORD-DIGEST", "claim revision id differs from claim_id@revision")
             else:
@@ -337,6 +341,12 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         res.fail("VER-COVERAGE",
                  f"declared coverage {cov.get('records_verified')}/{cov.get('records_total')} "
                  f"{declared} differs from recomputed {res.records_verified}/{res.records_total} {bad_ids}")
+
+    # ---- 4a. run_rows.sealed must equal the run entries the bundle lists
+    if bundle.run_rows is not None:
+        n_runs = sum(1 for x in bundle.records if x["kind"] == "run")
+        if bundle.run_rows["sealed"] != n_runs:
+            res.fail("VER-RUN-ROWS", f"run_rows.sealed is {bundle.run_rows['sealed']} but the bundle lists {n_runs} run records")
 
     # ---- 4b. gates are derived from verified bodies; the declared list must equal them (S2)
     try:

@@ -78,7 +78,7 @@
       "size": 601
     }
   ],
-  "record_digest": "sha256:2a5fcc294d970d050736164b774e7cc6dd25aac4159c1ef4a3f2feda54c95fb3",
+  "record_digest": "sha256:8c71dd0b274c5556bba1d2542ed6fff674e62ec277613c3e442dd1a804cab4d6",
   "records": [
     {
       "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
@@ -211,6 +211,14 @@
     "checked_status": "archive_integrity",
     "manifest_status": "archive_integrity",
     "status": "archive_integrity"
+  },
+  "run_rows": {
+    "legacy_no_record": 0,
+    "run_log_rows": 8,
+    "sealed": 8,
+    "unbound": 0,
+    "unsealable": 0,
+    "withheld_for_privacy": 0
   },
   "schema": "aihydro.bundle/1",
   "session_id": "synthetic-session-1"
