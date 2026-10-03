@@ -121,6 +121,11 @@ def _recomputed_with_entity(c):
 
 
 CASES = {
+    "RC-CONTEXT-RESOLVE": lambda c: c["@context"][1].pop("aihydro:recordDigest"),
+    "RC-CONTEXT-RESOLVE/prefix-only": lambda c: c.__setitem__("@context", [c["@context"][0], {"aihydro": rc.PROFILE_NS}]),
+    "RC-PROFILE": lambda c: _ent(c, "https://w3id.org/ro/wfrun/process/0.6").__setitem__("@type", "CreativeWork"),
+    "RC-PROFILE/no-entity": lambda c: _drop(c, "https://w3id.org/ro/wfrun/process/0.6"),
+    "RC-SOFTWARE-URL": _del_key("#tool-verifier", "url"),
     "RC-JSON": lambda c: c.pop("@graph"),
     "RC-CONTEXT": lambda c: c.__setitem__("@context", ["https://w3id.org/ro/crate/1.2/context", {}]),
     "RC-CONTEXT/wfrun": lambda c: c["@context"].append("https://w3id.org/ro/terms/workflow-run/context"),

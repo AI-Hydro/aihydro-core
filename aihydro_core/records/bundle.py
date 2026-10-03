@@ -260,6 +260,8 @@ def coverage_complete(c: Optional[Mapping[str, Any]]) -> bool:
 def _check_tool(t: Any, what: str) -> None:
     if not isinstance(t, dict) or not isinstance(t.get("name"), str) or not t["name"]:
         raise BundleError(f"{what} must be a dict with a non-empty string name")
+    if t.get("url") is not None and not (isinstance(t["url"], str) and t["url"]):
+        raise BundleError(f"{what}.url must be a non-empty string")
     sha = t.get("sha256")
     if sha is not None and not (isinstance(sha, str) and len(sha) == 64
                                 and all(c in "0123456789abcdef" for c in sha)):

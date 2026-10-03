@@ -52,6 +52,14 @@ from aihydro_core.records import (
 ROCRATE_CONTEXT = "https://w3id.org/ro/crate/1.3/context"
 ROCRATE_SPEC = "https://w3id.org/ro/crate/1.3"
 PRC_PROFILE = "https://w3id.org/ro/wfrun/process/0.6"
+#: Required ``url`` of every SoftwareApplication (rocrate-validator ro-crate-1.3 check 32.2).
+#: Tool calls are dispatched by the aihydro-tools MCP server; ORG_URL is the fallback.
+TOOLS_URL = "https://github.com/AI-Hydro/aihydro-tools"
+ORG_URL = "https://github.com/AI-Hydro"
+SPDX_BASE = "https://spdx.org/licenses/"
+PROV_NS = "http://www.w3.org/ns/prov#"
+RDFS_NS = "http://www.w3.org/2000/01/rdf-schema#"
+RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 CRATE_FILE = "ro-crate-metadata.json"
 BAGIT_FILE = "manifest-sha256.txt"
 
@@ -155,6 +163,39 @@ def media_type_for(path: str) -> Optional[str]:
     return _MEDIA_TYPES.get(path[dot:].lower()) if dot >= 0 else None
 
 
+def iso_ms(ts: Optional[str]) -> Optional[str]:
+    """``2026-10-03T10:00:04.000101Z`` -> ``2026-10-03T10:00:04.000+00:00``.
+
+    Process Run Crate validators accept only ``YYYY-MM-DDTHH:MM:SS[.mmm]+HH:MM``
+    for ``endTime``; the sealed record keeps the exact value. Fractions are
+    truncated, never rounded.
+    """
+    if not isinstance(ts, str):
+        return ts
+    m = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$", ts)
+    if not m:
+        return ts
+    frac = f".{(m.group(2) + '000')[:3]}" if m.group(2) else ""
+    return m.group(1) + frac + ("+00:00" if m.group(3) == "Z" else m.group(3))
+
+
+def _license_entity(g: "_Graph", lic: str) -> str:
+    """Contextual CreativeWork for a licence given as an SPDX id or an http(s) URL."""
+    lid = lic if lic.startswith("http") else SPDX_BASE + quote(lic, safe="-._+") + ".html"
+    name = lid.rstrip("/").rsplit("/", 1)[-1]
+    if name.endswith(".html"):
+        name = name[:-5]
+    return g.add({"@id": lid, "@type": "CreativeWork", "name": name,
+                  "description": f"Licence {name}. The licence text is at {lid}."})
+
+
+_FILE_DESCRIPTIONS = {
+    "bundle.json": "Sealed AI-Hydro Bundle (aihydro.bundle/1): content-addressed objects and located records.",
+    "capsule_manifest.json": "Capsule manifest: per-file digests and the exporter's replay status.",
+    "replay.py": "Standalone stdlib verifier shipped with the capsule.",
+}
+
+
 def _sha8(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()[:8]
 
@@ -215,6 +256,7 @@ def to_rocrate(
     for path in sorted(files):
         hex_to_paths.setdefault(files[path]["sha256"], []).append(path)
     obj_license = {o["ref"]: o.get("license") for o in bundle.objects}
+    obj_role = {o["ref"]: o["role"] for o in bundle.objects}
 
     def file_for(digest_value: Optional[str]) -> Optional[str]:
         if not isinstance(digest_value, str) or not digest_value.startswith("sha256:"):
@@ -225,10 +267,12 @@ def to_rocrate(
     # ---- files
     for path in sorted(files):
         f = files[path]
+        role = obj_role.get(path)
         ent = {"@id": file_id(path), "@type": "File", "name": path, "sha256": f["sha256"],
-               "contentSize": str(f["size"]), "encodingFormat": f.get("media_type") or media_type_for(path)}
+               "contentSize": str(f["size"]), "encodingFormat": f.get("media_type") or media_type_for(path),
+               "description": _FILE_DESCRIPTIONS.get(path) or (f"Capsule file (role: {role})." if role else "Capsule file.")}
         if obj_license.get(path):
-            ent["license"] = obj_license[path]
+            ent["license"] = ref(_license_entity(g, obj_license[path]))
         g.add(ent)
 
     entries = {(e["kind"], e["id"]): e for e in bundle.records}
@@ -263,7 +307,8 @@ def to_rocrate(
     # ---- instruments
     def tool_entity(tool: str, version: Optional[str], env_digest: Optional[str]) -> str:
         tid = frag("tool", tool + (f"@{version}" if version else ""))
-        ent: Dict[str, Any] = {"@id": tid, "@type": "SoftwareApplication", "name": tool, "version": version}
+        ent: Dict[str, Any] = {"@id": tid, "@type": "SoftwareApplication", "name": tool, "version": version,
+                               "url": TOOLS_URL}
         if env_digest:
             env = frag("env", env_digest.replace("sha256:", ""))
             g.add(_pv(env, "environment digest", env_digest, property_id="env_digest",
@@ -293,7 +338,8 @@ def to_rocrate(
         if rids[0] in unverifiable and len(rids) == 1:
             rid = rids[0]
             unknown_tool = g.add({"@id": frag("tool", "unverifiable-record"), "@type": "SoftwareApplication",
-                                  "name": "unknown (record withheld or unverifiable)"})
+                                  "name": "unknown (record withheld or unverifiable)",
+                                  "url": ORG_URL})
             g.add({"@id": aid, "@type": "CreateAction", "name": f"unverifiable record {rid}",
                    "description": "Digest-only stub: this record could not be verified or was withheld on export "
                                   "(see the replay assessment coverage). Nothing is claimed about its content.",
@@ -357,7 +403,7 @@ def to_rocrate(
             "@id": aid, "@type": "CreateAction", "name": tool,
             "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's "
                            "recorded_at (transaction time), not an execution timestamp.",
-            "instrument": ref(instr), "endTime": primary.get("recorded_at"),
+            "instrument": ref(instr), "endTime": iso_ms(primary.get("recorded_at")),
             "actionStatus": FAILED if failed else COMPLETED,
             "object": _refs(objects), "result": None,  # results filled after claims
             "aihydro:recordDigest": _one_or_many(
@@ -426,7 +472,9 @@ def to_rocrate(
         o_ent: Dict[str, Any] = {"@id": out_id, "@type": "Place", "name": f"Outlet of basin {bid}",
                                  "identifier": _refs(alias_ids)}
         if isinstance(outlet.get("lat"), (int, float)) and isinstance(outlet.get("lon"), (int, float)):
-            g.add({"@id": geo_id, "@type": "GeoCoordinates", "latitude": outlet["lat"], "longitude": outlet["lon"]})
+            g.add({"@id": geo_id, "@type": ["GeoCoordinates", "Geometry"], "name": f"Outlet coordinates of basin {bid}",
+                   "latitude": outlet["lat"], "longitude": outlet["lon"],
+                   "asWKT": f"POINT({outlet['lon']} {outlet['lat']})"})
             o_ent["geo"] = ref(geo_id)
         g.add(o_ent)
         basin_ids[bid] = pid
@@ -537,21 +585,27 @@ def to_rocrate(
     # ---- export action (C5)
     exporter = bundle.exporter or {"name": "unspecified exporter"}
     ex_tool = g.add({"@id": frag("tool", "exporter"), "@type": "SoftwareApplication", "name": exporter["name"],
-                     "version": exporter.get("version"), "sha256": exporter.get("sha256")})
+                     "version": exporter.get("version"), "sha256": exporter.get("sha256"),
+                     "url": exporter.get("url") or TOOLS_URL})
     export_results = [file_id(p) for p in sorted(files) if file_id(p) not in produced_files]
     export_id = frag("action", "export")
     g.add({"@id": export_id, "@type": "CreateAction", "name": "Capsule export",
            "description": "The export step. It created or copied every file not produced by a recorded tool call. "
                           "Its own run record, if one exists, is sealed after the capsule and is not part of this bundle.",
-           "instrument": ref(ex_tool), "endTime": bundle.created_at, "actionStatus": COMPLETED,
+           "instrument": ref(ex_tool), "endTime": iso_ms(bundle.created_at), "actionStatus": COMPLETED,
            "result": _refs(export_results)})
     action_ids.append(export_id)
 
     # ---- replay AssessAction (C2)
     rp, cov = bundle.replay, bundle.coverage
     verifier = rp.get("assessor") or {"name": "unspecified verifier"}
+    # a verifier that is a capsule file (replay.py) is addressed by its relative path
+    verifier_url = verifier.get("url") or next(
+        (file_id(p) for p in sorted(files) if verifier.get("sha256") and files[p]["sha256"] == verifier["sha256"]),
+        TOOLS_URL)
     ver_id = g.add({"@id": frag("tool", "verifier"), "@type": "SoftwareApplication", "name": verifier["name"],
-                    "version": verifier.get("version"), "sha256": verifier.get("sha256")})
+                    "version": verifier.get("version"), "sha256": verifier.get("sha256"),
+                    "url": verifier_url})
     complete = coverage_complete(cov)
     level = rp["status"]
     cov_text = (f"{cov['records_verified']} of {cov['records_total']} sealed records verified"
@@ -572,20 +626,22 @@ def to_rocrate(
            "description": (f"Self-assessed by the exporter at export time, not by an independent party. "
                            f"Level {level}: {cov_text}. {'Complete.' if complete else 'This is a partial assessment.'} "
                            f"This is an integrity check; nothing was recomputed. {INTEGRITY_NOTICE}"),
-           "instrument": ref(ver_id), "object": ref("./"), "endTime": bundle.created_at,
+           "instrument": ref(ver_id), "object": ref("./"), "endTime": iso_ms(bundle.created_at),
            "actionStatus": COMPLETED, "result": _refs(pvs)})
     action_ids.append(replay_id)
 
     # ---- licence, profile, terms
     lic_ref: Any
     if license:
-        lic_ref = license
+        lic_ref = ref(_license_entity(g, license))
     else:
         lic_ref = ref(g.add({"@id": "#license-unspecified", "@type": "CreativeWork",
                              "name": "No licence selected by exporter",
                              "description": "The exporter did not select a licence for this crate; per-file licences, "
                                             "where known, are on the File entities."}))
-    g.add({"@id": PRC_PROFILE, "@type": "CreativeWork", "name": "Process Run Crate", "version": "0.6"})
+    g.add({"@id": PRC_PROFILE, "@type": ["CreativeWork", "Profile"], "name": "Process Run Crate", "version": "0.6"})
+    bid_pv = g.add(_pv("#bundle-id", "AI-Hydro bundle id", bundle.bundle_id, property_id="aihydro.bundle_id",
+                       description="Content digest naming this Bundle: {schema, session_id, objects, records}."))
     for term, (label, comment) in sorted(TERMS.items()):
         g.add({"@id": PROFILE_NS + term, "@type": "rdf:Property", "name": label, "description": comment,
                "rdfs:label": label, "rdfs:comment": f"{comment} Namespace status: {PROFILE_STATUS}."})
@@ -595,10 +651,10 @@ def to_rocrate(
         "name": f"AI-Hydro evidence bundle for session {_safe_text(bundle.session_id)}",
         "description": ("Deterministic RO-Crate projection of a sealed AI-Hydro Bundle. " + INTEGRITY_NOTICE
                         + f" Replay level: {level} ({cov_text}); see the replay assessment."),
-        "datePublished": bundle.created_at, "license": lic_ref, "identifier": bundle.bundle_id,
+        "datePublished": bundle.created_at, "license": lic_ref, "identifier": ref(bid_pv),
         "conformsTo": ref(PRC_PROFILE),
         "hasPart": _refs(file_id(p) for p in files),
-        "mentions": _refs(action_ids),
+        "mentions": _refs(list(action_ids) + claim_ents),
         "aihydro:replayStatus": level,
     }
     g.add(root)
@@ -606,11 +662,29 @@ def to_rocrate(
 
     graph = sorted(g.ents.values(), key=lambda e: e["@id"])
     return {
-        "@context": [ROCRATE_CONTEXT, {"aihydro": PROFILE_NS, "prov": "http://www.w3.org/ns/prov#",
-                                       "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-                                       "rdfs": "http://www.w3.org/2000/01/rdf-schema#"}],
+        "@context": [ROCRATE_CONTEXT, context_terms()],
         "@graph": graph,
     }
+
+
+#: Compact keys used in the graph that the RO-Crate context does not define.
+#: Each is declared as an explicit term (rocrate-validator ro-crate-1.3 check 4.1
+#: requires every key to resolve through the @context, not merely have a prefix).
+EXTRA_TERMS = {
+    "prov:wasInformedBy": PROV_NS + "wasInformedBy",
+    "prov:wasDerivedFrom": PROV_NS + "wasDerivedFrom",
+    "prov:wasRevisionOf": PROV_NS + "wasRevisionOf",
+    "rdfs:label": RDFS_NS + "label",
+    "rdfs:comment": RDFS_NS + "comment",
+}
+
+
+def context_terms() -> Dict[str, str]:
+    """The inline @context object: prefixes plus an explicit term for every compact key used."""
+    ctx = {"aihydro": PROFILE_NS, "prov": PROV_NS, "rdf": RDF_NS, "rdfs": RDFS_NS}
+    ctx.update({f"aihydro:{t}": PROFILE_NS + t for t in TERMS})
+    ctx.update(EXTRA_TERMS)
+    return ctx
 
 
 def _output_digest_of(gk, groups, rec_of, unverifiable) -> Optional[str]:

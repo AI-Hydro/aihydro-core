@@ -41,6 +41,12 @@ RULES: Dict[str, str] = {
     "RC-JSON": f"{_RC}/appendix/jsonld.html",
     "RC-CONTEXT": "https://www.researchobject.org/ro-crate/specification/1.3/appendix/changelog.html "
                   "and https://github.com/ResearchObject/ro-terms/blob/master/workflow-run/vocabulary.csv (sha256 remap)",
+    "RC-CONTEXT-RESOLVE": "rocrate-validator ro-crate-1.3 check 4.1 (every compacted key must resolve through the @context); "
+                          f"{_RC}/appendix/jsonld.html#ro-crate-json-ld-context",
+    "RC-PROFILE": "rocrate-validator ro-crate-1.3 check 16.1 (root conformsTo values MUST reference Profile entities); "
+                  f"{_RC}/profiles.html",
+    "RC-SOFTWARE-URL": "rocrate-validator ro-crate-1.3 check 32.2 (SoftwareApplication MUST have a url); "
+                       f"{_RC}/contextual-entities.html#software",
     "RC-DESCRIPTOR": f"{_RC}/root-data-entity.html#ro-crate-metadata-descriptor",
     "RC-ROOT": f"{_RC}/root-data-entity.html#direct-properties-of-the-root-data-entity",
     "RC-FLAT": f"{_RC}/appendix/jsonld.html#flattened-json-ld",
@@ -126,6 +132,16 @@ def validate_graph(crate: Any, directory: "str | Path | None" = None) -> List[Fi
     if any(isinstance(c, str) and "workflow-run" in c for c in ctx):
         err("RC-CONTEXT", "the workflow-run context must not be added: it remaps sha256")
     graph = crate["@graph"]
+    inline = {}
+    for c in ctx:
+        if isinstance(c, dict):
+            inline.update(c)
+    used_compact = sorted({k for e in graph if isinstance(e, dict) for k in e
+                           if ":" in k and not k.startswith("@")})
+    for k in used_compact:
+        if k not in inline:
+            err("RC-CONTEXT-RESOLVE", f"key {k!r} is not defined as a term in the inline @context "
+                                       "(a prefix alone does not make the key resolvable)")
     ents: Dict[str, Dict[str, Any]] = {}
     for e in graph:
         if not isinstance(e, dict) or not isinstance(e.get("@id"), str):
@@ -173,6 +189,11 @@ def validate_graph(crate: Any, directory: "str | Path | None" = None) -> List[Fi
     conf = _ref_ids(root.get("conformsTo"))
     if PRC_PROFILE not in conf:
         err("PRC-ACTION", f"root conformsTo must include Process Run Crate {PRC_PROFILE}", root["@id"])
+    for c in conf:
+        pe = ents.get(c)
+        if pe is None or "Profile" not in _types(pe) or not pe.get("name") or not pe.get("version"):
+            err("RC-PROFILE", f"root conformsTo {c!r} must reference a contextual entity typed Profile with name and version",
+                root["@id"])
     if any(c.startswith(PROFILE_NS) for c in conf):
         err("RC-DESCRIPTOR", "root must not claim an AI-Hydro profile until its IRI resolves (M4)", root["@id"])
 
@@ -234,6 +255,8 @@ def validate_graph(crate: Any, directory: "str | Path | None" = None) -> List[Fi
             if rid not in actions:
                 err("PROV-DOMAIN", f"prov:wasInformedBy must target an action, got {rid!r}", aid)
     for sid, s in ents.items():
+        if "SoftwareApplication" in _types(s) and not s.get("url"):
+            err("RC-SOFTWARE-URL", "a SoftwareApplication must have a url", sid)
         if "SoftwareApplication" in _types(s) and "version" in s and "softwareVersion" in s:
             err("PRC-ACTION", "SoftwareApplication must not have both version and softwareVersion", sid)
 

@@ -3,9 +3,18 @@
     "https://w3id.org/ro/crate/1.3/context",
     {
       "aihydro": "https://ai-hydro.invalid/terms/0.1/",
+      "aihydro:canonicalization": "https://ai-hydro.invalid/terms/0.1/canonicalization",
+      "aihydro:recordDigest": "https://ai-hydro.invalid/terms/0.1/recordDigest",
+      "aihydro:recordLocation": "https://ai-hydro.invalid/terms/0.1/recordLocation",
+      "aihydro:replayStatus": "https://ai-hydro.invalid/terms/0.1/replayStatus",
       "prov": "http://www.w3.org/ns/prov#",
+      "prov:wasDerivedFrom": "http://www.w3.org/ns/prov#wasDerivedFrom",
+      "prov:wasInformedBy": "http://www.w3.org/ns/prov#wasInformedBy",
+      "prov:wasRevisionOf": "http://www.w3.org/ns/prov#wasRevisionOf",
       "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-      "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "rdfs:comment": "http://www.w3.org/2000/01/rdf-schema#comment",
+      "rdfs:label": "http://www.w3.org/2000/01/rdf-schema#label"
     }
   ],
   "@graph": [
@@ -16,7 +25,7 @@
       "aihydro:canonicalization": "aihydro.c14n/1",
       "aihydro:recordDigest": "sha256:751651a7a94d79fa4ccd7d492644849643b002cb07bb6f90d26c8b86cbb92802",
       "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
-      "endTime": "2026-10-03T10:00:05.000001Z",
+      "endTime": "2026-10-03T10:00:05.000+00:00",
       "instrument": {
         "@id": "#tool-add_claim%402.1.0"
       },
@@ -33,7 +42,7 @@
       "@type": "CreateAction",
       "actionStatus": "http://schema.org/CompletedActionStatus",
       "description": "The export step. It created or copied every file not produced by a recorded tool call. Its own run record, if one exists, is sealed after the capsule and is not part of this bundle.",
-      "endTime": "2026-10-03T12:00:00Z",
+      "endTime": "2026-10-03T12:00:00+00:00",
       "instrument": {
         "@id": "#tool-exporter"
       },
@@ -72,7 +81,7 @@
       "aihydro:canonicalization": "aihydro.c14n/1",
       "aihydro:recordDigest": "sha256:3766e948afe8b62c23ce57cc4a8aa2de82a913054aa667df28c4e39f85e04b33",
       "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
-      "endTime": "2026-10-03T10:00:06.000001Z",
+      "endTime": "2026-10-03T10:00:06.000+00:00",
       "error": "APPROVAL_REQUIRED",
       "instrument": {
         "@id": "#tool-promote_claim_to_registry%402.1.0"
@@ -95,7 +104,7 @@
         "sha256:d14afdfd3029ece70e59b38b200d6e01d777cc4ceca8bef20cccb1a33ce5939d"
       ],
       "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
-      "endTime": "2026-10-03T10:00:03.000101Z",
+      "endTime": "2026-10-03T10:00:03.000+00:00",
       "instrument": {
         "@id": "#tool-fetch_streamflow_data%402.1.0"
       },
@@ -122,7 +131,7 @@
         "sha256:c63254bf1baf427cb239f98f8ef73435abd8cb05ac7368a202bc17dd22baa782"
       ],
       "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
-      "endTime": "2026-10-03T10:00:04.000101Z",
+      "endTime": "2026-10-03T10:00:04.000+00:00",
       "instrument": {
         "@id": "#tool-extract_hydrological_signatures%402.1.0"
       },
@@ -166,7 +175,7 @@
       "aihydro:canonicalization": "aihydro.c14n/1",
       "aihydro:recordDigest": "sha256:7c0446f1e799896a96ce1f407c8520cc8b7d6ba8b536bf581b37d982a9e58455",
       "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
-      "endTime": "2026-10-03T10:00:01.000001Z",
+      "endTime": "2026-10-03T10:00:01.000+00:00",
       "instrument": {
         "@id": "#tool-start_session%402.1.0"
       },
@@ -185,7 +194,7 @@
       "aihydro:canonicalization": "aihydro.c14n/1",
       "aihydro:recordDigest": "sha256:8ece7d4d25e5869cd30a800e8d1a39b00a2c4e6e9d7c88775505ee4469cec7a7",
       "description": "Tool call recorded by the AI-Hydro run log. endTime is the sealed record's recorded_at (transaction time), not an execution timestamp.",
-      "endTime": "2026-10-03T10:00:02.000001Z",
+      "endTime": "2026-10-03T10:00:02.000+00:00",
       "instrument": {
         "@id": "#tool-delineate_watershed%402.1.0"
       },
@@ -218,7 +227,7 @@
       "@type": "AssessAction",
       "actionStatus": "http://schema.org/CompletedActionStatus",
       "description": "Self-assessed by the exporter at export time, not by an independent party. Level archive_integrity: 12 of 12 sealed records verified. Complete. This is an integrity check; nothing was recomputed. Integrity is not origin: digests and seals show that content is unchanged since it was sealed; they do not establish who produced it.",
-      "endTime": "2026-10-03T12:00:00Z",
+      "endTime": "2026-10-03T12:00:00+00:00",
       "instrument": {
         "@id": "#tool-verifier"
       },
@@ -301,6 +310,14 @@
       "name": "block_size",
       "propertyID": "block_size",
       "value": 365
+    },
+    {
+      "@id": "#bundle-id",
+      "@type": "PropertyValue",
+      "description": "Content digest naming this Bundle: {schema, session_id, objects, records}.",
+      "name": "AI-Hydro bundle id",
+      "propertyID": "aihydro.bundle_id",
+      "value": "sha256:349f4bafbf8d9f6d229738e88c7960d0192e4a58874c641706e702670b366cce"
     },
     {
       "@id": "#ci-sigs.1-baseflow_index",
@@ -494,9 +511,14 @@
     },
     {
       "@id": "#outlet-geo-7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
-      "@type": "GeoCoordinates",
+      "@type": [
+        "GeoCoordinates",
+        "Geometry"
+      ],
+      "asWKT": "POINT(-68.58277778 47.2375)",
       "latitude": 47.2375,
-      "longitude": -68.58277778
+      "longitude": -68.58277778,
+      "name": "Outlet coordinates of basin aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a"
     },
     {
       "@id": "#output-claim.1",
@@ -657,6 +679,7 @@
         "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
       },
       "name": "add_claim",
+      "url": "https://github.com/AI-Hydro/aihydro-tools",
       "version": "2.1.0"
     },
     {
@@ -666,12 +689,14 @@
         "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
       },
       "name": "delineate_watershed",
+      "url": "https://github.com/AI-Hydro/aihydro-tools",
       "version": "2.1.0"
     },
     {
       "@id": "#tool-exporter",
       "@type": "SoftwareApplication",
       "name": "aihydro-core test exporter",
+      "url": "https://github.com/AI-Hydro/aihydro-tools",
       "version": "0.2.4"
     },
     {
@@ -681,6 +706,7 @@
         "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
       },
       "name": "extract_hydrological_signatures",
+      "url": "https://github.com/AI-Hydro/aihydro-tools",
       "version": "2.1.0"
     },
     {
@@ -690,6 +716,7 @@
         "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
       },
       "name": "fetch_streamflow_data",
+      "url": "https://github.com/AI-Hydro/aihydro-tools",
       "version": "2.1.0"
     },
     {
@@ -699,6 +726,7 @@
         "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
       },
       "name": "promote_claim_to_registry",
+      "url": "https://github.com/AI-Hydro/aihydro-tools",
       "version": "2.1.0"
     },
     {
@@ -708,6 +736,7 @@
         "@id": "#env-b9f421ec59fac18aa525f24dd2bc1e370e808ff5212e7ad2ebae5b31990ea95c"
       },
       "name": "start_session",
+      "url": "https://github.com/AI-Hydro/aihydro-tools",
       "version": "2.1.0"
     },
     {
@@ -715,6 +744,7 @@
       "@type": "SoftwareApplication",
       "name": "aihydro-core test verifier",
       "sha256": "fff3adf566fc9cee1243723eb5dca379ed2118d15a0367a012fc29e3f216dcab",
+      "url": "replay.py",
       "version": "0.2.4"
     },
     {
@@ -755,7 +785,9 @@
           "@id": "session.json"
         }
       ],
-      "identifier": "sha256:349f4bafbf8d9f6d229738e88c7960d0192e4a58874c641706e702670b366cce",
+      "identifier": {
+        "@id": "#bundle-id"
+      },
       "license": {
         "@id": "#license-unspecified"
       },
@@ -783,6 +815,18 @@
         },
         {
           "@id": "#assess-replay"
+        },
+        {
+          "@id": "#claim-bfi-test-claim-rev0"
+        },
+        {
+          "@id": "#claim-bfi-test-claim-rev1"
+        },
+        {
+          "@id": "#claim-bfi-test-claim-rev2"
+        },
+        {
+          "@id": "#claim-bfi-test-claim-view"
         }
       ],
       "name": "AI-Hydro evidence bundle for session synthetic-session-1"
@@ -791,6 +835,7 @@
       "@id": "README.md",
       "@type": "File",
       "contentSize": "52",
+      "description": "Capsule file (role: readme).",
       "encodingFormat": "text/markdown",
       "name": "README.md",
       "sha256": "9d3068a8a7a66b63299b39efb9e2d129bde4b89cfd136ea09f8cc5b13d814c35"
@@ -799,6 +844,7 @@
       "@id": "bundle.json",
       "@type": "File",
       "contentSize": "7055",
+      "description": "Sealed AI-Hydro Bundle (aihydro.bundle/1): content-addressed objects and located records.",
       "encodingFormat": "application/json",
       "name": "bundle.json",
       "sha256": "6778e65931739f443445935f3a7e8d43272b42c34782654f56b2f8a4518791d0"
@@ -807,6 +853,7 @@
       "@id": "capsule_manifest.json",
       "@type": "File",
       "contentSize": "1021",
+      "description": "Capsule manifest: per-file digests and the exporter's replay status.",
       "encodingFormat": "application/json",
       "name": "capsule_manifest.json",
       "sha256": "08ff2c9553fca6167b2b42fa96c7d690080050b81a5ed4dff831d9746ac39f60"
@@ -815,8 +862,11 @@
       "@id": "data/served_streamflow_x.csv",
       "@type": "File",
       "contentSize": "56",
+      "description": "Capsule file (role: served_data).",
       "encodingFormat": "text/csv",
-      "license": "CC0-1.0",
+      "license": {
+        "@id": "https://spdx.org/licenses/CC0-1.0.html"
+      },
       "name": "data/served_streamflow_x.csv",
       "sha256": "9c4960fc26d973380d73ddfdea3459dbf08d88c2e460ac9a7285638d33e436ee"
     },
@@ -824,8 +874,11 @@
       "@id": "data/streamflow_x.json",
       "@type": "File",
       "contentSize": "47",
+      "description": "Capsule file (role: retained_data).",
       "encodingFormat": "application/json",
-      "license": "CC0-1.0",
+      "license": {
+        "@id": "https://spdx.org/licenses/CC0-1.0.html"
+      },
       "name": "data/streamflow_x.json",
       "sha256": "86c002aceaa752caad0a731e8a52f7b5204c6ebb6dfe78ed3881a99fa765f57d"
     },
@@ -862,8 +915,17 @@
       "rdfs:label": "Replay status"
     },
     {
-      "@id": "https://w3id.org/ro/wfrun/process/0.6",
+      "@id": "https://spdx.org/licenses/CC0-1.0.html",
       "@type": "CreativeWork",
+      "description": "Licence CC0-1.0. The licence text is at https://spdx.org/licenses/CC0-1.0.html.",
+      "name": "CC0-1.0"
+    },
+    {
+      "@id": "https://w3id.org/ro/wfrun/process/0.6",
+      "@type": [
+        "CreativeWork",
+        "Profile"
+      ],
       "name": "Process Run Crate",
       "version": "0.6"
     },
@@ -871,6 +933,7 @@
       "@id": "records/claim_revisions.json",
       "@type": "File",
       "contentSize": "4267",
+      "description": "Capsule file (role: claim_revisions).",
       "encodingFormat": "application/json",
       "name": "records/claim_revisions.json",
       "sha256": "725b6dbe25d5b07565600e936b2d23efacee5da8a38b3b47ea34a2fba8d5a267"
@@ -879,6 +942,7 @@
       "@id": "replay.py",
       "@type": "File",
       "contentSize": "53",
+      "description": "Standalone stdlib verifier shipped with the capsule.",
       "encodingFormat": "text/x-python",
       "name": "replay.py",
       "sha256": "fff3adf566fc9cee1243723eb5dca379ed2118d15a0367a012fc29e3f216dcab"
@@ -897,6 +961,7 @@
       "@id": "run_log.json",
       "@type": "File",
       "contentSize": "14053",
+      "description": "Capsule file (role: run_log).",
       "encodingFormat": "application/json",
       "name": "run_log.json",
       "sha256": "3f4fba03314d2f4a989f251f314a74555a21e7e874399e54446a8778d37950f5"
@@ -905,6 +970,7 @@
       "@id": "session.json",
       "@type": "File",
       "contentSize": "601",
+      "description": "Capsule file (role: session).",
       "encodingFormat": "application/json",
       "name": "session.json",
       "sha256": "fb3c853a30ccc8863bcb59b3c26408a2148ce0978bf004111fa748ecb0240ee1"

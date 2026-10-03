@@ -270,8 +270,11 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         license_value: Optional[str] = None
         try:
             for ent in json.loads(shipped.decode("utf-8")).get("@graph", []):
-                if ent.get("@id") == "./" and isinstance(ent.get("license"), str):
-                    license_value = ent["license"]
+                if ent.get("@id") == "./":
+                    lic = ent.get("license")
+                    lid = lic.get("@id") if isinstance(lic, dict) else lic
+                    if isinstance(lid, str) and lid != "#license-unspecified":
+                        license_value = lid
         except (ValueError, AttributeError):
             pass
         try:

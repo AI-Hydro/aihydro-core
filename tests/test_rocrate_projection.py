@@ -88,7 +88,8 @@ def test_files_have_bare_hex_sha256_and_sizes(cap):
         e = g[rc.file_id(path)]
         assert e["@type"] == "File" and e["sha256"] == f["sha256"] and len(e["sha256"]) == 64
         assert not e["sha256"].startswith("sha256:") and e["contentSize"] == str(f["size"])
-    assert g["data/served_streamflow_x.csv"]["license"] == "CC0-1.0"
+    lic = g["data/served_streamflow_x.csv"]["license"]["@id"]
+    assert lic == "https://spdx.org/licenses/CC0-1.0.html" and g[lic]["name"] == "CC0-1.0" and g[lic]["description"]
     assert g["data/served_streamflow_x.csv"]["encodingFormat"] == "text/csv"
     assert "ro-crate-metadata.json" not in files and "manifest-sha256.txt" not in files
 
@@ -259,3 +260,37 @@ def test_actor_projection_only_for_humans(tmp_path):
     g = {e["@id"]: e for e in json.loads(dumps_crate(to_rocrate(bundle, records, bodies, files)))["@graph"]}
     assert "agent" not in g["#action-start.1"]
     assert fx.SID
+
+
+def test_validator_driven_shapes(cap):
+    """Shapes the external validator (ro-crate-1.3 / process-run-crate) requires or recommends."""
+    g = _graph(cap)
+    crate = json.loads((cap / "ro-crate-metadata.json").read_text())
+    ctx = crate["@context"][1]
+    for key in ("aihydro:recordDigest", "prov:wasDerivedFrom", "rdfs:label"):
+        assert key in ctx                                                     # explicit terms (4.1)
+    prc = g["https://w3id.org/ro/wfrun/process/0.6"]
+    assert "Profile" in prc["@type"] and prc["name"] and prc["version"] == "0.6"   # 16.1
+    apps = [e for e in g.values() if e.get("@type") == "SoftwareApplication"]
+    assert apps and all(a["url"].startswith("https://") or a["url"] == "replay.py" for a in apps)  # 32.2
+    assert g["#tool-verifier"]["url"] == "replay.py"
+    import re
+    for a in g.values():
+        if "endTime" in a:
+            assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?\+\d{2}:\d{2}$", a["endTime"])
+    assert g["#action-sigs.1"]["endTime"] == "2026-10-03T10:00:04.000+00:00"        # truncated, not rounded
+    assert all(e.get("description") for e in g.values() if e.get("@type") == "File")
+    assert g["#outlet-geo-" + BASIN_REF["id"].split(":")[-1]]["name"]
+    assert "Geometry" in g["#outlet-geo-" + BASIN_REF["id"].split(":")[-1]]["@type"]
+    assert g["./"]["identifier"] == {"@id": "#bundle-id"} and g["#bundle-id"]["value"].startswith("sha256:")
+    assert {"@id": "#claim-bfi-test-claim-rev0"} in g["./"]["mentions"]
+    for k in ("author", "publisher"):
+        assert k not in g["./"]                                                # owner/privacy decision
+
+
+def test_licence_argument_becomes_a_described_spdx_entity(cap):
+    bundle = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
+    records, bodies, files = load_inputs(cap, bundle)
+    g = {e["@id"]: e for e in to_rocrate(bundle, records, bodies, files, license="Apache-2.0")["@graph"]}
+    assert g["./"]["license"] == {"@id": "https://spdx.org/licenses/Apache-2.0.html"}
+    assert g["https://spdx.org/licenses/Apache-2.0.html"]["name"] == "Apache-2.0"
