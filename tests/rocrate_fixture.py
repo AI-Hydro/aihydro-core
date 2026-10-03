@@ -194,7 +194,8 @@ def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None
                 "checked_status": "archive_integrity",
                 "assessor": {"name": "aihydro-core test verifier", "version": "0.2.4", "sha256": replay_sha}},
         coverage=cov,
-        run_rows=make_run_rows(run_log_rows=len(rows), sealed=len(rows)),
+        run_rows=make_run_rows(run_log_rows=len(rows), sealed=len(rows) - len(redact or []),
+                               withheld_for_privacy=len(redact or [])),
         gates=[{"run_id": "promo.1", "code": "APPROVAL_REQUIRED", "outcome": "error"}],
     ).seal()
     (root / "bundle.json").write_bytes(_dump(bundle.to_dict()))

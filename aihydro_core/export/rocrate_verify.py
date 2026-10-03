@@ -345,8 +345,14 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
     # ---- 4a. run_rows.sealed must equal the run entries the bundle lists
     if bundle.run_rows is not None:
         n_runs = sum(1 for x in bundle.records if x["kind"] == "run")
-        if bundle.run_rows["sealed"] != n_runs:
-            res.fail("VER-RUN-ROWS", f"run_rows.sealed is {bundle.run_rows['sealed']} but the bundle lists {n_runs} run records")
+        sealed_n, withheld_n = bundle.run_rows["sealed"], bundle.run_rows["withheld_for_privacy"]
+        # A privacy-withheld row that kept its record digest is a run entry too (it lands in
+        # unverifiable_ids) but is counted under withheld_for_privacy, not sealed; a withheld row
+        # with no digest has no entry at all. So sealed <= run entries <= sealed + withheld.
+        if not sealed_n <= n_runs <= sealed_n + withheld_n:
+            res.fail("VER-RUN-ROWS", f"run_rows says {sealed_n} sealed and {withheld_n} withheld rows, which cannot "
+                                     f"account for the {n_runs} run records the bundle lists "
+                                     f"(need sealed <= entries <= sealed + withheld_for_privacy)")
 
     # ---- 4b. gates are derived from verified bodies; the declared list must equal them (S2)
     try:

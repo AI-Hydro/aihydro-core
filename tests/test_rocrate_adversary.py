@@ -243,7 +243,7 @@ def test_a14_symlinks_are_refused(cap, tmp_path):
 def test_s6_version_matches_distribution_metadata():
     import aihydro_core
     text = (Path(aihydro_core.__file__).resolve().parent.parent / "pyproject.toml").read_text()
-    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.4"
+    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.5"
 
 
 # ----------------------------------------------------------------------- S7
@@ -511,3 +511,32 @@ def test_t2_failed_store_claim_stub_says_so(cap):
     stub = g[f"#claim-{CLAIM_ID}-revfailed-store"]
     assert "failed verification at export" in stub["name"]
     assert "failed verification at export" in g[stub["additionalProperty"]["@id"]]["description"]
+
+
+# --------------------------------------------- VER-RUN-ROWS with withheld rows
+def test_run_rows_accepts_withheld_rows_that_kept_their_record(tmp_path):
+    d = tmp_path / "c"
+    b = build_capsule(d, redact=["claim.1", "sigs.1"])
+    assert b.run_rows == {"run_log_rows": 8, "sealed": 6, "legacy_no_record": 0, "unbound": 0,
+                          "unsealable": 0, "withheld_for_privacy": 2}
+    res = verify_crate(d)
+    assert res.ok and "VER-RUN-ROWS" not in res.rules             # 8 run entries = 6 sealed + 2 withheld stubs
+
+
+def test_run_rows_accepts_a_withheld_row_with_no_entry(cap):
+    # one extra run-log row was withheld and kept no digest: no entry, but it is counted
+    _reseal_bundle(cap, lambda b: setattr(b, "run_rows", {"run_log_rows": 9, "sealed": 8, "legacy_no_record": 0,
+                                                          "unbound": 0, "unsealable": 0, "withheld_for_privacy": 1}))
+    _regen(cap)
+    assert "VER-RUN-ROWS" not in _rules(cap)
+
+
+def test_run_rows_bounds_still_catch_overclaims_and_underclaims(cap):
+    rr = lambda sealed, withheld: {"run_log_rows": sealed + withheld, "sealed": sealed, "legacy_no_record": 0,   # noqa: E731
+                                   "unbound": 0, "unsealable": 0, "withheld_for_privacy": withheld}
+    for sealed, withheld in ((9, 0), (7, 0), (6, 1)):              # 8 entries: too many sealed, too few, too few
+        shutil.copytree(cap, cap.parent / f"c{sealed}{withheld}")
+        d = cap.parent / f"c{sealed}{withheld}"
+        _reseal_bundle(d, lambda b, s=sealed, w=withheld: setattr(b, "run_rows", rr(s, w)))
+        _regen(d)
+        assert "VER-RUN-ROWS" in _rules(d), (sealed, withheld)
