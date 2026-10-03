@@ -44,6 +44,7 @@ from urllib.parse import quote
 from aihydro_core.records import (
     GATE_CODES,
     GATE_OUTCOMES,
+    UNSEALED_KINDS,
     Bundle,
     BundleError,
     ReplayStatus,
@@ -283,6 +284,7 @@ def to_rocrate(
 
     g = _Graph()
     unverifiable = set(bundle.coverage["unverifiable_ids"])
+    _require_privacy_withheld(bundle, unverifiable, records, bodies)
     hex_to_paths: Dict[str, List[str]] = {}
     for path in sorted(files):
         hex_to_paths.setdefault(files[path]["sha256"], []).append(path)
@@ -751,6 +753,24 @@ def _bound_run_body(entry, unverifiable: bool, record, body) -> Optional[Mapping
     extra = record.get("extra")
     sealed = extra.get("entry_digest") if isinstance(extra, Mapping) else None
     return body if sealed == binding["digest"] else None
+
+
+def _require_privacy_withheld(bundle: Bundle, unverifiable: set, records: Mapping[str, Any],
+                              bodies: Mapping[str, Any]) -> None:
+    """Partial coverage is honest only for privacy-withheld records. A run entry must have a located
+    body with ``redacted_for_privacy is True``; a claim revision needs a located record of the same
+    claim with that flag. Any other declared-unverifiable record is a defect, not partiality."""
+    stub_claims = {k.split(":", 1)[1].rpartition("@")[0] for k, r in records.items()
+                   if k.startswith("claim_revision:") and isinstance(r, Mapping) and r.get("redacted_for_privacy") is True}
+    for e in bundle.records:
+        if e["kind"] in UNSEALED_KINDS or e["id"] not in unverifiable:
+            continue
+        body = bodies.get(record_key(e["kind"], e["id"]))
+        ok = ((e["kind"] == "run" and isinstance(body, Mapping) and body.get("redacted_for_privacy") is True)
+              or (e["kind"] == "claim_revision" and e["id"].rpartition("@")[0] in stub_claims))
+        if not ok:
+            raise ValueError(f"{e['kind']}:{e['id']} is declared unverifiable but is not withheld for privacy; "
+                             "refusing to project a defect as partial coverage")
 
 
 def derive_gates(bundle: Bundle, records: Mapping[str, Any], bodies: Mapping[str, Any]) -> List[Dict[str, Any]]:

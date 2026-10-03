@@ -237,6 +237,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
     not_ok: Dict[Tuple[str, str], Tuple[str, str]] = {}   # (kind,id) -> (rule, reason)
     revisions: Dict[str, List[Tuple[Tuple[str, str], Dict[str, Any]]]] = {}
     content_checks: List[Tuple[str, str]] = []
+    stub_runs: set = set()      # run entries whose located body is a privacy-withheld stub
+    stub_claims: set = set()    # claims with a privacy-withheld revision record
 
     for e in bundle.records:
         kind, eid = e["kind"], e["id"]
@@ -251,6 +253,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                 else:
                     not_ok[key] = ("VER-BINDING", f"body unresolvable: {why}")
                 continue
+        if kind == "run" and isinstance(body, dict) and body.get("redacted_for_privacy") is True:
+            stub_runs.add(eid)
         if e.get("binding") is not None and not verify_binding(body, e["binding"]):
             if kind in UNSEALED_KINDS:
                 res.fail("VER-BINDING", "body does not match its aihydro.entry/1 binding", label)
@@ -263,6 +267,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         if not okr or not isinstance(rec, dict):
             not_ok[key] = ("VER-RECORD-SEAL", f"record unresolvable: {why}")
             continue
+        if kind == "claim_revision" and rec.get("redacted_for_privacy") is True:
+            stub_claims.add(eid.rpartition("@")[0])
         if kind == "run":
             if not verify_record_dict(rec):
                 not_ok[key] = ("VER-RECORD-SEAL", "run record seal does not verify")
@@ -332,7 +338,14 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
     declared = (bundle.coverage or {}).get("unverifiable_ids", [])
     for (kind, eid), (rule, why) in sorted(not_ok.items()):
         if eid in declared:
-            res.notes.append(f"{kind}:{eid} declared unverifiable ({rule}: {why})")
+            withheld = (kind == "run" and eid in stub_runs) or (
+                kind == "claim_revision" and eid.rpartition("@")[0] in stub_claims)
+            if withheld:
+                res.notes.append(f"{kind}:{eid} declared unverifiable ({rule}: {why})")
+            else:
+                # a declaration cannot launder a defect: only a privacy-withheld row is acceptable partiality
+                res.fail("VER-UNVERIFIABLE", f"declared unverifiable but not withheld for privacy ({rule}: {why})",
+                         f"{kind}:{eid}")
         else:
             res.fail(rule, why, f"{kind}:{eid}")
     cov = bundle.coverage or {}

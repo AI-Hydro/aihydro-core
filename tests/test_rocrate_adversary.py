@@ -243,7 +243,7 @@ def test_a14_symlinks_are_refused(cap, tmp_path):
 def test_s6_version_matches_distribution_metadata():
     import aihydro_core
     text = (Path(aihydro_core.__file__).resolve().parent.parent / "pyproject.toml").read_text()
-    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.5"
+    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.6"
 
 
 # ----------------------------------------------------------------------- S7
@@ -498,19 +498,20 @@ def test_c2_validator_requires_unsealed_wording(cap):
     assert "HON-COVERAGE" not in {f.rule for f in errors(validate_graph(crate, cap))}
 
 
-def test_t2_failed_store_claim_stub_says_so(cap):
+def test_t2_failed_store_claim_stub_is_a_defect_not_partiality(cap):
+    """A '<claim>@failed-store' entry is not privacy-withheld, so declaring it unverifiable is refused."""
     stub_digest = digest({"status": "error", "error": "chain broken"})
+
     def edit(b):
         from aihydro_core.records import make_record_entry
         b.records.append(make_record_entry("claim_revision", f"{CLAIM_ID}@failed-store", stub_digest,
                                            "records/claim_revisions.json#/0"))
         b.coverage = {"records_verified": 12, "records_total": 13, "unverifiable_ids": [f"{CLAIM_ID}@failed-store"]}
     _reseal_bundle(cap, edit)
-    _regen(cap)
-    g = _crate(cap)
-    stub = g[f"#claim-{CLAIM_ID}-revfailed-store"]
-    assert "failed verification at export" in stub["name"]
-    assert "failed verification at export" in g[stub["additionalProperty"]["@id"]]["description"]
+    with pytest.raises(ValueError, match="withheld for privacy"):
+        _regen(cap)
+    assert "VER-UNVERIFIABLE" in _rules(cap)
+
 
 
 # --------------------------------------------- VER-RUN-ROWS with withheld rows
@@ -540,3 +541,71 @@ def test_run_rows_bounds_still_catch_overclaims_and_underclaims(cap):
         _reseal_bundle(d, lambda b, s=sealed, w=withheld: setattr(b, "run_rows", rr(s, w)))
         _regen(d)
         assert "VER-RUN-ROWS" in _rules(d), (sealed, withheld)
+
+
+# ----------------------------------------------- F7: VER-UNVERIFIABLE (M14b, M02e)
+def _declare(cap, ids, verified):
+    _reseal_bundle(cap, lambda b: setattr(b, "coverage", {"records_verified": verified, "records_total": 12,
+                                                          "unverifiable_ids": sorted(ids)}))
+
+
+def test_m14b_foreign_session_record_cannot_be_laundered_into_partial_coverage(cap):
+    _edit_run_session(cap, "claim.1", "someone-elses-session")
+    assert "VER-SESSION" in _rules(cap)                       # undeclared: the defect itself
+    _declare(cap, ["claim.1"], 11)                            # the exporter declares it unverifiable ...
+    res = verify_crate(cap)
+    assert "VER-UNVERIFIABLE" in res.rules and not res.ok     # ... which is not allowed: it is no privacy stub
+    assert not any(f.rule == "VER-SESSION" for f in res.failures)
+    b = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
+    recs, bods, files = load_inputs(cap, b)
+    with pytest.raises(ValueError, match="withheld for privacy"):
+        to_rocrate(b, recs, bods, files)
+
+
+def test_m02e_seal_mismatch_cannot_be_laundered(cap):
+    _jedit(cap / "run_log.json", lambda d: d["claim.1"]["record"].__setitem__("tool_version", "9.9.9"))
+    _sync_objects(cap, {"run_log.json"})
+    _declare(cap, ["claim.1"], 11)
+    res = verify_crate(cap)
+    assert "VER-UNVERIFIABLE" in res.rules and not res.ok
+    assert any("VER-RECORD-SEAL" in f.message for f in res.failures if f.rule == "VER-UNVERIFIABLE")
+
+
+def test_non_run_kinds_declared_unverifiable_are_refused(cap):
+    # a basin_ref whose id is declared unverifiable is never privacy-withheld
+    bid = BASIN_REF["id"]
+    _declare(cap, [bid], 11)
+    res = verify_crate(cap)
+    assert "VER-COVERAGE" in res.rules                        # it actually verifies, so the declaration is also wrong
+    b = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
+    recs, bods, files = load_inputs(cap, b)
+    with pytest.raises(ValueError, match="withheld for privacy"):
+        to_rocrate(b, recs, bods, files)
+
+
+def test_privacy_withheld_run_is_acceptable_partiality(tmp_path):
+    d = tmp_path / "c"
+    build_capsule(d, redact=["claim.1"])
+    res = verify_crate(d)
+    assert res.ok and any("claim.1" in n for n in res.notes) and "VER-UNVERIFIABLE" not in res.rules
+
+
+def test_privacy_withheld_claim_revision_is_acceptable_partiality(cap):
+    revs = json.loads((cap / "records/claim_revisions.json").read_text())
+    revs[1] = {**revs[1], "redacted_for_privacy": True}        # withheld stub: the seal no longer holds
+    (cap / "records/claim_revisions.json").write_text(json.dumps(revs, indent=2, sort_keys=True) + "\n")
+    _sync_objects(cap, {"records/claim_revisions.json"})
+    ids = [f"{CLAIM_ID}@{n}" for n in range(3)]               # the chain breaks for the whole claim
+    _declare(cap, ids, 9)
+    _regen(cap)
+    res = verify_crate(cap)
+    assert res.ok, res.failures
+    assert "VER-UNVERIFIABLE" not in res.rules and len(res.notes) == 3
+
+
+def test_stub_flag_must_be_exactly_true(tmp_path):
+    d = tmp_path / "c"
+    build_capsule(d, redact=["claim.1"])
+    _jedit(d / "run_log.json", lambda x: x["claim.1"].__setitem__("redacted_for_privacy", "yes"))
+    _sync_objects(d, {"run_log.json"})
+    assert "VER-UNVERIFIABLE" in _rules(d)
