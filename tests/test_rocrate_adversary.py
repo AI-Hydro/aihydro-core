@@ -101,7 +101,7 @@ def test_a12_verify_cli_is_a_single_gate(cap):
 
 
 def test_to_rocrate_refuses_unsupported_levels(cap):
-    for level in ("cross_check", "recomputed", "independently_replicated"):
+    for level in ("cross_check", "recomputed", "independently_reproduced"):
         b = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
         b.replay = {**b.replay, "status": level, "manifest_status": level, "checked_status": level}
         b.seal()

@@ -245,7 +245,7 @@ def test_environment_fingerprint_shape_and_missing_dists():
 def test_replay_status_vocabulary():
     assert ReplayStatus.ARCHIVE_INTEGRITY.value == "archive_integrity"
     assert [s.value for s in ReplayStatus] == [
-        "not_performed", "archive_integrity", "cross_check", "recomputed", "independently_replicated",
+        "not_performed", "archive_integrity", "cross_check", "recomputed", "independently_reproduced",
     ]
 
 

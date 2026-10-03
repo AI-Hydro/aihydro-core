@@ -75,7 +75,13 @@ program, ADR-001). It is stdlib-only.
   and named distributions.
 - `ReplayStatus` names what a replay established: `not_performed`,
   `archive_integrity`, `cross_check`, `recomputed` or
-  `independently_replicated`.
+  `independently_reproduced` (a new researcher, same data; Essawy et al. 2020 /
+  NASEM 2019 *reproducibility*). The platform never asserts *replicability* (new
+  data). The old persisted spelling `independently_replicated` is still read and
+  maps to `independently_reproduced`. Mapping to Essawy: `archive_integrity` is
+  the sub-floor prerequisite, `cross_check` is internal consistency (no re-fetch,
+  no recomputation), `recomputed` is repeatability/runnability (the recomputation
+  entity must record actor and machine).
 
 ## RO-Crate export (`aihydro_core.export`)
 

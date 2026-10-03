@@ -110,7 +110,7 @@ TERMS: Dict[str, Tuple[str, str]] = {
     "replayStatus": (
         "Replay status",
         "Strongest level of replay the exporter actually performed: not_performed, "
-        "archive_integrity, cross_check, recomputed or independently_replicated. "
+        "archive_integrity, cross_check, recomputed or independently_reproduced. "
         "Integrity checks are never presented as recomputation.",
     ),
 }

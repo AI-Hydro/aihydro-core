@@ -918,9 +918,9 @@
     {
       "@id": "https://ai-hydro.invalid/terms/0.1/replayStatus",
       "@type": "rdf:Property",
-      "description": "Strongest level of replay the exporter actually performed: not_performed, archive_integrity, cross_check, recomputed or independently_replicated. Integrity checks are never presented as recomputation.",
+      "description": "Strongest level of replay the exporter actually performed: not_performed, archive_integrity, cross_check, recomputed or independently_reproduced. Integrity checks are never presented as recomputation.",
       "name": "Replay status",
-      "rdfs:comment": "Strongest level of replay the exporter actually performed: not_performed, archive_integrity, cross_check, recomputed or independently_replicated. Integrity checks are never presented as recomputation. Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
+      "rdfs:comment": "Strongest level of replay the exporter actually performed: not_performed, archive_integrity, cross_check, recomputed or independently_reproduced. Integrity checks are never presented as recomputation. Namespace status: unregistered: OPEN-8 has not published a resolvable IRI for this namespace.",
       "rdfs:label": "Replay status"
     },
     {

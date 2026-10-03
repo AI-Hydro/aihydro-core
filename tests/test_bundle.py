@@ -245,5 +245,25 @@ def test_legacy_partial_maps_to_archive_integrity_with_incomplete_coverage():
 
 def test_replay_ordering():
     assert replay_rank("not_performed") < replay_rank("archive_integrity") < replay_rank("cross_check")
-    assert replay_rank("cross_check") < replay_rank("recomputed") < replay_rank("independently_replicated")
+    assert replay_rank("cross_check") < replay_rank("recomputed") < replay_rank("independently_reproduced")
     assert min_replay_status("cross_check", "archive_integrity") is ReplayStatus.ARCHIVE_INTEGRITY
+
+
+def test_independently_replicated_is_renamed_but_still_readable():
+    assert ReplayStatus.INDEPENDENTLY_REPRODUCED.value == "independently_reproduced"
+    assert not hasattr(ReplayStatus, "INDEPENDENTLY_REPLICATED")
+    assert read_legacy_replay_status("independently_replicated") == (ReplayStatus.INDEPENDENTLY_REPRODUCED, True)
+    assert ReplayStatus("independently_replicated") is ReplayStatus.INDEPENDENTLY_REPRODUCED
+    assert "independently_replicated" not in {s.value for s in ReplayStatus}
+    assert replay_rank("independently_replicated") == replay_rank("independently_reproduced") == 4
+    b = Bundle(session_id="s", replay={"status": "independently_replicated"})      # persisted old string still parses
+    assert b.replay["status"] == "independently_replicated"
+
+
+def test_replay_docstrings_state_the_essawy_mapping_and_no_replicability():
+    doc = (ReplayStatus.__doc__ or "") + (__import__("aihydro_core.records.replay", fromlist=["x"]).__doc__ or "")
+    doc = " ".join(doc.split())
+    for needle in ("Essawy", "never asserts replicability", "new data"):
+        assert needle in doc
+    for member in ReplayStatus:
+        assert member.name in ("NOT_PERFORMED", "ARCHIVE_INTEGRITY", "CROSS_CHECK", "RECOMPUTED", "INDEPENDENTLY_REPRODUCED")
