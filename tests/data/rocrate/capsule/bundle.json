@@ -1,5 +1,5 @@
 {
-  "bundle_id": "sha256:4106608848b392718cebb859c6f5e96f22bc7fde23a0de912400d86d5fcf2d84",
+  "bundle_id": "sha256:cfca0197268178f3c38a7f09f813b3270db4ff7f23d04423c481ed952a029039",
   "canonicalization": "aihydro.c14n/1",
   "coverage": {
     "records_total": 12,
@@ -28,7 +28,7 @@
       "size": 52
     },
     {
-      "digest": "sha256:08ff2c9553fca6167b2b42fa96c7d690080050b81a5ed4dff831d9746ac39f60",
+      "digest": "sha256:ffc67b90c6c224742b7a5a2ad14168f4b231ef617c821b825fa471cb60ec2472",
       "media_type": "application/json",
       "ref": "capsule_manifest.json",
       "role": "manifest",
@@ -51,11 +51,11 @@
       "size": 47
     },
     {
-      "digest": "sha256:725b6dbe25d5b07565600e936b2d23efacee5da8a38b3b47ea34a2fba8d5a267",
+      "digest": "sha256:d56dcc9300bfdef0ac5f6153ba26b425d3b11fe7de80f549c4b80a07896cbeed",
       "media_type": "application/json",
       "ref": "records/claim_revisions.json",
       "role": "claim_revisions",
-      "size": 4267
+      "size": 4945
     },
     {
       "digest": "sha256:fff3adf566fc9cee1243723eb5dca379ed2118d15a0367a012fc29e3f216dcab",
@@ -79,7 +79,7 @@
       "size": 601
     }
   ],
-  "record_digest": "sha256:a5a834813bd3fc7622745674ed5bfebb52fed501212bae18fc37d944d53e232f",
+  "record_digest": "sha256:9a227bb3b328711b731375dcf2c2136f22cf949ea0c8687a37c091b988d451bd",
   "records": [
     {
       "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
@@ -90,19 +90,19 @@
     {
       "id": "bfi-test-claim@0",
       "kind": "claim_revision",
-      "record_digest": "sha256:7e62eeed3b4b4e211560ee19c184cd11aadcfa94831c2d23a415e1a637eaaca6",
+      "record_digest": "sha256:64b07f2de0a69f95367077982eaa24522acc91decc63599b96f98320e3aed92d",
       "record_location": "records/claim_revisions.json#/0"
     },
     {
       "id": "bfi-test-claim@1",
       "kind": "claim_revision",
-      "record_digest": "sha256:2996dba4af143609c734bf96ae9ae1b5a69d52d08163eda5e1f34c2fa209c97c",
+      "record_digest": "sha256:90bd53aa4635956f03d6f716a8d5772dedaf168677fe22892300ba8808bfa188",
       "record_location": "records/claim_revisions.json#/1"
     },
     {
       "id": "bfi-test-claim@2",
       "kind": "claim_revision",
-      "record_digest": "sha256:0e4ef587cbec189e61cd56f3fc459afef2391a81df2d928db8426ae3cc65e417",
+      "record_digest": "sha256:8e98565d757217cd252a1e1a08b0268cb9092090ff41114e98054cefedc0df35",
       "record_location": "records/claim_revisions.json#/2"
     },
     {

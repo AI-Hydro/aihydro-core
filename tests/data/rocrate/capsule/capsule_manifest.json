@@ -17,8 +17,8 @@
     },
     {
       "path": "records/claim_revisions.json",
-      "sha256": "725b6dbe25d5b07565600e936b2d23efacee5da8a38b3b47ea34a2fba8d5a267",
-      "size": 4267
+      "sha256": "d56dcc9300bfdef0ac5f6153ba26b425d3b11fe7de80f549c4b80a07896cbeed",
+      "size": 4945
     },
     {
       "path": "run_log.json",

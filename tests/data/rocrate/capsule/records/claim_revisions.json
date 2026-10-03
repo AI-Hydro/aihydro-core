@@ -12,6 +12,10 @@
     "claim_id": "bfi-test-claim",
     "content": {
       "claim_type": "empirical_result",
+      "evidence_seals": {
+        "signatures.1": "sha256:7af8926aaf92ce7db732e0a835525780709f1cfee5aab56d49e4be3209e0fff2",
+        "sigs.1": "sha256:c63254bf1baf427cb239f98f8ef73435abd8cb05ac7368a202bc17dd22baa782"
+      },
       "evidence_spans": [
         {
           "metric_ref": "baseflow_index",
@@ -39,10 +43,10 @@
       "status": "draft",
       "text": "The baseflow index is 0.585 (90% CI 0.571-0.599)."
     },
-    "record_digest": "sha256:7e62eeed3b4b4e211560ee19c184cd11aadcfa94831c2d23a415e1a637eaaca6",
+    "record_digest": "sha256:64b07f2de0a69f95367077982eaa24522acc91decc63599b96f98320e3aed92d",
     "recorded_at": "2026-10-03T10:00:05.500000Z",
     "revision": 0,
-    "revision_digest": "sha256:edce1255f13c1c5461e13204ad3633cfbc246162d3440c3530a579efb6783cf3",
+    "revision_digest": "sha256:e9b364e19a12ed80933d28d89c585e354eac00b88533378dd5ccce351dd4e495",
     "schema": "aihydro.claim_revision_record/1",
     "session_id": "synthetic-session-1"
   },
@@ -59,6 +63,10 @@
     "claim_id": "bfi-test-claim",
     "content": {
       "claim_type": "empirical_result",
+      "evidence_seals": {
+        "signatures.1": "sha256:7af8926aaf92ce7db732e0a835525780709f1cfee5aab56d49e4be3209e0fff2",
+        "sigs.1": "sha256:c63254bf1baf427cb239f98f8ef73435abd8cb05ac7368a202bc17dd22baa782"
+      },
       "evidence_spans": [
         {
           "metric_ref": "baseflow_index",
@@ -86,13 +94,13 @@
       "status": "supported",
       "text": "The baseflow index is 0.585 (90% CI 0.571-0.599)."
     },
-    "record_digest": "sha256:2996dba4af143609c734bf96ae9ae1b5a69d52d08163eda5e1f34c2fa209c97c",
+    "record_digest": "sha256:90bd53aa4635956f03d6f716a8d5772dedaf168677fe22892300ba8808bfa188",
     "recorded_at": "2026-10-03T10:00:06.500000Z",
     "revision": 1,
-    "revision_digest": "sha256:557f1d6f5a3424a0bca6ff184a71b3331eb0d6dc06de6a35eee45c3b47ee229e",
+    "revision_digest": "sha256:28028759b3b88dd84c77ca37b1662193d67b133ff3cc54a65dc737d7734bc3ab",
     "schema": "aihydro.claim_revision_record/1",
     "session_id": "synthetic-session-1",
-    "supersedes": "sha256:edce1255f13c1c5461e13204ad3633cfbc246162d3440c3530a579efb6783cf3"
+    "supersedes": "sha256:e9b364e19a12ed80933d28d89c585e354eac00b88533378dd5ccce351dd4e495"
   },
   {
     "actor": {
@@ -107,6 +115,10 @@
     "claim_id": "bfi-test-claim",
     "content": {
       "claim_type": "empirical_result",
+      "evidence_seals": {
+        "signatures.1": "sha256:7af8926aaf92ce7db732e0a835525780709f1cfee5aab56d49e4be3209e0fff2",
+        "sigs.1": "sha256:c63254bf1baf427cb239f98f8ef73435abd8cb05ac7368a202bc17dd22baa782"
+      },
       "evidence_spans": [
         {
           "metric_ref": "baseflow_index",
@@ -134,12 +146,12 @@
       "status": "supported",
       "text": "The baseflow index is 0.585 (90% CI 0.571-0.599)."
     },
-    "record_digest": "sha256:0e4ef587cbec189e61cd56f3fc459afef2391a81df2d928db8426ae3cc65e417",
+    "record_digest": "sha256:8e98565d757217cd252a1e1a08b0268cb9092090ff41114e98054cefedc0df35",
     "recorded_at": "2026-10-03T10:00:07.500000Z",
     "revision": 2,
-    "revision_digest": "sha256:730a0368a703e641081ade793180fcf7241fb17881e2a5ba41e4a8021c6a38b9",
+    "revision_digest": "sha256:ff6f82e3a4bc498b411e70f7aec6602e530ccb3347b88b0e4ad0a5c51fa4f624",
     "schema": "aihydro.claim_revision_record/1",
     "session_id": "synthetic-session-1",
-    "supersedes": "sha256:557f1d6f5a3424a0bca6ff184a71b3331eb0d6dc06de6a35eee45c3b47ee229e"
+    "supersedes": "sha256:28028759b3b88dd84c77ca37b1662193d67b133ff3cc54a65dc737d7734bc3ab"
   }
 ]

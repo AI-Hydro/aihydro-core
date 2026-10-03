@@ -330,7 +330,7 @@
       "description": "Content digest naming this Bundle: {schema, session_id, objects, records}.",
       "name": "AI-Hydro bundle id",
       "propertyID": "aihydro.bundle_id",
-      "value": "sha256:4106608848b392718cebb859c6f5e96f22bc7fde23a0de912400d86d5fcf2d84"
+      "value": "sha256:cfca0197268178f3c38a7f09f813b3270db4ff7f23d04423c481ed952a029039"
     },
     {
       "@id": "#ci-sigs.1-baseflow_index",
@@ -366,7 +366,7 @@
         "@id": "#claim-bfi-test-claim-rev0-basis"
       },
       "aihydro:canonicalization": "aihydro.c14n/1",
-      "aihydro:recordDigest": "sha256:7e62eeed3b4b4e211560ee19c184cd11aadcfa94831c2d23a415e1a637eaaca6",
+      "aihydro:recordDigest": "sha256:64b07f2de0a69f95367077982eaa24522acc91decc63599b96f98320e3aed92d",
       "aihydro:recordLocation": "records/claim_revisions.json#/0",
       "creativeWorkStatus": "draft",
       "dateModified": "2026-10-03T10:00:05.500000Z",
@@ -395,7 +395,7 @@
         "@id": "#claim-bfi-test-claim-rev1-basis"
       },
       "aihydro:canonicalization": "aihydro.c14n/1",
-      "aihydro:recordDigest": "sha256:2996dba4af143609c734bf96ae9ae1b5a69d52d08163eda5e1f34c2fa209c97c",
+      "aihydro:recordDigest": "sha256:90bd53aa4635956f03d6f716a8d5772dedaf168677fe22892300ba8808bfa188",
       "aihydro:recordLocation": "records/claim_revisions.json#/1",
       "creativeWorkStatus": "supported",
       "dateModified": "2026-10-03T10:00:06.500000Z",
@@ -427,7 +427,7 @@
         "@id": "#claim-bfi-test-claim-rev2-basis"
       },
       "aihydro:canonicalization": "aihydro.c14n/1",
-      "aihydro:recordDigest": "sha256:0e4ef587cbec189e61cd56f3fc459afef2391a81df2d928db8426ae3cc65e417",
+      "aihydro:recordDigest": "sha256:8e98565d757217cd252a1e1a08b0268cb9092090ff41114e98054cefedc0df35",
       "aihydro:recordLocation": "records/claim_revisions.json#/2",
       "creativeWorkStatus": "supported",
       "dateModified": "2026-10-03T10:00:07.500000Z",
@@ -892,7 +892,7 @@
       "description": "Sealed AI-Hydro Bundle (aihydro.bundle/1): content-addressed objects and located records.",
       "encodingFormat": "application/json",
       "name": "bundle.json",
-      "sha256": "55328f699ffbf395a2f0a81d6b516e1fbdefdcc72896a9606111f23ef9f93667"
+      "sha256": "16c0b09e522051aa446916c047ca64a3ef928b7c0141d00a0157f0b7a6cf56b8"
     },
     {
       "@id": "capsule_manifest.json",
@@ -901,7 +901,7 @@
       "description": "Capsule manifest: per-file digests and the exporter's replay status.",
       "encodingFormat": "application/json",
       "name": "capsule_manifest.json",
-      "sha256": "08ff2c9553fca6167b2b42fa96c7d690080050b81a5ed4dff831d9746ac39f60"
+      "sha256": "ffc67b90c6c224742b7a5a2ad14168f4b231ef617c821b825fa471cb60ec2472"
     },
     {
       "@id": "data/served_streamflow_x.csv",
@@ -985,11 +985,11 @@
     {
       "@id": "records/claim_revisions.json",
       "@type": "File",
-      "contentSize": "4267",
+      "contentSize": "4945",
       "description": "Capsule file (role: claim_revisions).",
       "encodingFormat": "application/json",
       "name": "records/claim_revisions.json",
-      "sha256": "725b6dbe25d5b07565600e936b2d23efacee5da8a38b3b47ea34a2fba8d5a267"
+      "sha256": "d56dcc9300bfdef0ac5f6153ba26b425d3b11fe7de80f549c4b80a07896cbeed"
     },
     {
       "@id": "replay.py",

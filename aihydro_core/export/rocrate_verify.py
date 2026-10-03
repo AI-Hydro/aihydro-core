@@ -37,6 +37,7 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 from aihydro_core.export.rocrate import (
     BAGIT_FILE,
     CRATE_FILE,
+    cited_seals,
     claim_links_problem,
     claim_stub_problem,
     derive_gates,
@@ -46,6 +47,7 @@ from aihydro_core.export.rocrate import (
     load_inputs,
     run_stub_problem,
     scan_files,
+    stub_anchor_problem,
     to_rocrate,
 )
 from aihydro_core.records import (
@@ -345,6 +347,18 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                 if is_stub:
                     not_ok[k] = ("VER-RECORD-SEAL", "revision withheld for privacy")
                     withheld_ok.add(k)
+
+    # a withheld run cited by a carried claim revision must carry the digest the claim was bound to
+    cited = cited_seals(r for _items in revisions.values() for _k, r, is_stub in _items if not is_stub)
+    for key in sorted(withheld_ok):
+        if key[0] != "run":
+            continue
+        entry = next(x for x in bundle.records if (x["kind"], x["id"]) == key)
+        anchor = stub_anchor_problem(key[1], entry.get("record_digest"), cited)
+        if anchor:
+            res.fail("VER-STUB-ANCHOR", anchor, f"run:{key[1]}")
+            not_ok[key] = ("VER-STUB-ANCHOR", anchor)
+            withheld_ok.discard(key)
 
     sealed = [e for e in bundle.records if e["kind"] not in UNSEALED_KINDS]
     bad_ids = sorted({eid for (_k, eid) in not_ok})

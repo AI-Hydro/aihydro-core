@@ -243,7 +243,7 @@ def test_a14_symlinks_are_refused(cap, tmp_path):
 def test_s6_version_matches_distribution_metadata():
     import aihydro_core
     text = (Path(aihydro_core.__file__).resolve().parent.parent / "pyproject.toml").read_text()
-    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.6"
+    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.7"
 
 
 # ----------------------------------------------------------------------- S7
@@ -771,3 +771,63 @@ def test_stub_flag_must_be_exactly_true(tmp_path):
     _jedit(d / "run_log.json", lambda x: x["claim.1"].__setitem__("redacted_for_privacy", "yes"))
     _sync_objects(d, {"run_log.json"})
     assert "VER-UNVERIFIABLE" in _rules(d)
+
+
+# ----------------------------------------------------------------- VER-STUB-ANCHOR
+def test_stub_anchor_cited_genuine_stub_is_acceptable(tmp_path):
+    d = tmp_path / "c"
+    build_capsule(d, redact=["sigs.1"])                       # sigs.1 is cited by every revision's evidence_seals
+    res = verify_crate(d)
+    assert res.ok and "VER-STUB-ANCHOR" not in res.rules, res.failures
+
+
+def test_stub_anchor_a4_on_a_cited_row_fails(cap):
+    """a4: a bare stub with an invented record_digest, bundle entry repaired to match: no external data needed."""
+    invented = "sha256:" + "ab" * 32
+
+    def edit(rl, rid):
+        rl[rid] = {"redacted_for_privacy": True, "run_id": rid, "session_id": "synthetic-session-1",
+                   "timestamp": rl[rid]["timestamp"], "tool_name": rl[rid]["tool_name"],
+                   "record_digest": invented, "reason": "invented"}
+    _row_edit(cap, "sigs.1", edit)
+
+    def fix(b):
+        for r in b.records:
+            if r["kind"] == "run" and r["id"] == "sigs.1":
+                r["record_digest"] = invented
+        b.coverage = {"records_verified": 11, "records_total": 12, "unverifiable_ids": ["sigs.1"],
+                      "withheld_ids": ["sigs.1"]}
+        b.run_rows = {"run_log_rows": 8, "sealed": 7, "legacy_no_record": 0, "unbound": 0, "unsealable": 0,
+                      "withheld_for_privacy": 1}
+    _reseal_bundle(cap, fix)
+    res = verify_crate(cap)
+    assert "VER-STUB-ANCHOR" in res.rules and not res.ok
+    assert "evidence_seals" in " ".join(f.message for f in res.failures if f.rule == "VER-STUB-ANCHOR")
+    b = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
+    recs, bods, files = load_inputs(cap, b)
+    with pytest.raises(ValueError, match="evidence_seals"):
+        to_rocrate(b, recs, bods, files)
+
+
+def test_stub_anchor_uncited_row_is_externally_anchored_only(cap):
+    """The stated limit: an uncited row's invented digest is not caught in-capsule."""
+    invented = "sha256:" + "cd" * 32
+
+    def edit(rl, rid):
+        rl[rid] = {"redacted_for_privacy": True, "run_id": rid, "session_id": "synthetic-session-1",
+                   "timestamp": rl[rid]["timestamp"], "tool_name": rl[rid]["tool_name"],
+                   "record_digest": invented, "reason": "invented"}
+    _row_edit(cap, "claim.1", edit)                           # claim.1 is not cited by any evidence_seals
+
+    def fix(b):
+        for r in b.records:
+            if r["kind"] == "run" and r["id"] == "claim.1":
+                r["record_digest"] = invented
+        b.coverage = {"records_verified": 11, "records_total": 12, "unverifiable_ids": ["claim.1"],
+                      "withheld_ids": ["claim.1"]}
+        b.run_rows = {"run_log_rows": 8, "sealed": 7, "legacy_no_record": 0, "unbound": 0, "unsealable": 0,
+                      "withheld_for_privacy": 1}
+    _reseal_bundle(cap, fix)
+    _regen(cap)
+    res = verify_crate(cap)
+    assert "VER-STUB-ANCHOR" not in res.rules and res.ok     # documented limit: integrity is not origin

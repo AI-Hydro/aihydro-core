@@ -822,6 +822,31 @@ def claim_stub_problem(entry: Mapping[str, Any], rec: Mapping[str, Any], session
     return None
 
 
+def cited_seals(revisions: Iterable[Mapping[str, Any]]) -> Dict[str, set]:
+    """``run_id -> {record_digest, ...}`` cited in the ``content.evidence_seals`` of carried (non-stub)
+    claim revisions (present since tools' seal-binding)."""
+    out: Dict[str, set] = {}
+    for r in revisions:
+        if not isinstance(r, Mapping) or r.get("redacted_for_privacy") is True:
+            continue
+        seals = (r.get("content") or {}).get("evidence_seals") if isinstance(r.get("content"), Mapping) else None
+        if isinstance(seals, Mapping):
+            for rid, d in seals.items():
+                out.setdefault(str(rid), set()).add(d)
+    return out
+
+
+def stub_anchor_problem(run_id: str, record_digest: Any, cited: Mapping[str, set]) -> Optional[str]:
+    """``VER-STUB-ANCHOR``: a withheld run stub whose run is cited in any carried revision's
+    ``evidence_seals`` must carry exactly the digest the claim was bound to. Uncited rows stay
+    externally anchored only (registry stamp, records cross-check, a signed bundle id)."""
+    digests = cited.get(run_id)
+    if digests and digests != {record_digest}:
+        return (f"withheld run {run_id} carries record_digest {record_digest} but a claim revision's "
+                f"evidence_seals binds it to {sorted(map(str, digests))}")
+    return None
+
+
 def claim_links_problem(items: Sequence[Mapping[str, Any]]) -> Optional[str]:
     """Chain links around any gap, without seals: contiguous revision numbers from 0, same claim
     and session, ``supersedes`` equal to the previous ``revision_digest``. ``items`` are the claim's
@@ -848,6 +873,7 @@ def _require_privacy_withheld(bundle: Bundle, unverifiable: set, records: Mappin
     for e in bundle.records:
         if e["kind"] == "claim_revision":
             claims.setdefault(e["id"].rpartition("@")[0], []).append(e)
+    cited = cited_seals(r for k, r in records.items() if k.startswith("claim_revision:"))
     for e in bundle.records:
         if e["kind"] in UNSEALED_KINDS or e["id"] not in unverifiable:
             continue
@@ -859,7 +885,7 @@ def _require_privacy_withheld(bundle: Bundle, unverifiable: set, records: Mappin
                 problem = "not a privacy-withheld stub"
             else:
                 p = run_stub_problem(e, body, bundle.session_id)
-                problem = p[1] if p else None
+                problem = p[1] if p else stub_anchor_problem(e["id"], body.get("record_digest"), cited)
         elif e["kind"] == "claim_revision":
             rec = records.get(record_key("claim_revision", e["id"]))
             if not isinstance(rec, Mapping) or rec.get("redacted_for_privacy") is not True:

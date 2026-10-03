@@ -143,7 +143,9 @@ def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None
         "scope": {"basins": ["01013500"], "metric": "baseflow_index",
                   "basin_refs": [{"id": BASIN_REF["id"], "label": "01013500"}]},
         "evidence_spans": [{"source_type": "run", "source_id": "sigs.1", "metric_ref": "baseflow_index"}],
-        "limitations": ["synthetic fixture"], "revision_marker": n}
+        "limitations": ["synthetic fixture"], "revision_marker": n,
+        "evidence_seals": {"sigs.1": rows["sigs.1"]["record"]["record_digest"],
+                           "signatures.1": rows["signatures.1"]["record"]["record_digest"]}}
     revs: List[dict] = []
     prev = None
     for n in range(revisions):

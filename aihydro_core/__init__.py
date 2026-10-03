@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 
 from aihydro_core.primitives.errors import ToolError  # noqa: F401 — eager, stdlib-only
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 # Contract names re-exported lazily (pydantic-backed; see contracts.py).
 _LAZY_CONTRACT_EXPORTS = {
