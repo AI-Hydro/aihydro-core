@@ -37,11 +37,14 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 from aihydro_core.export.rocrate import (
     BAGIT_FILE,
     CRATE_FILE,
+    claim_links_problem,
+    claim_stub_problem,
     derive_gates,
     dumps_crate,
     find_irregular,
     find_symlinks,
     load_inputs,
+    run_stub_problem,
     scan_files,
     to_rocrate,
 )
@@ -49,7 +52,6 @@ from aihydro_core.records import (
     UNSEALED_KINDS,
     Bundle,
     BundleError,
-    ClaimRevision,
     basin_id_from_anchor,
     coverage_complete,
     digest,
@@ -60,7 +62,6 @@ from aihydro_core.records import (
     split_location,
     verify_basin_ref_dict,
     verify_binding,
-    verify_chain,
     verify_claim_revision_dict,
     verify_record_dict,
 )
@@ -235,10 +236,9 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
             return False, None, str(exc)
 
     not_ok: Dict[Tuple[str, str], Tuple[str, str]] = {}   # (kind,id) -> (rule, reason)
-    revisions: Dict[str, List[Tuple[Tuple[str, str], Dict[str, Any]]]] = {}
+    revisions: Dict[str, List[Tuple[Tuple[str, str], Dict[str, Any], bool]]] = {}
     content_checks: List[Tuple[str, str]] = []
-    stub_runs: set = set()      # run entries whose located body is a privacy-withheld stub
-    stub_claims: set = set()    # claims with a privacy-withheld revision record
+    withheld_ok: set = set()    # (kind, id) of privacy-withheld stubs that proved everything they can
 
     for e in bundle.records:
         kind, eid = e["kind"], e["id"]
@@ -254,7 +254,14 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                     not_ok[key] = ("VER-BINDING", f"body unresolvable: {why}")
                 continue
         if kind == "run" and isinstance(body, dict) and body.get("redacted_for_privacy") is True:
-            stub_runs.add(eid)
+            # withholding excuses only the body binding; the stub must still prove everything else
+            problem = run_stub_problem(e, body, bundle.session_id)
+            if problem is None:
+                not_ok[key] = ("VER-BINDING", "body withheld for privacy")
+                withheld_ok.add(key)
+            else:
+                not_ok[key] = problem
+            continue
         if e.get("binding") is not None and not verify_binding(body, e["binding"]):
             if kind in UNSEALED_KINDS:
                 res.fail("VER-BINDING", "body does not match its aihydro.entry/1 binding", label)
@@ -268,7 +275,12 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
             not_ok[key] = ("VER-RECORD-SEAL", f"record unresolvable: {why}")
             continue
         if kind == "claim_revision" and rec.get("redacted_for_privacy") is True:
-            stub_claims.add(eid.rpartition("@")[0])
+            problem = claim_stub_problem(e, rec, bundle.session_id)
+            if problem is not None:
+                not_ok[key] = problem
+            else:                                   # its own seal is excused; the chain around it is not
+                revisions.setdefault(rec["claim_id"], []).append((key, rec, True))
+            continue
         if kind == "run":
             if not verify_record_dict(rec):
                 not_ok[key] = ("VER-RECORD-SEAL", "run record seal does not verify")
@@ -296,7 +308,7 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
             elif eid != f"{rec.get('claim_id')}@{rec.get('revision')}":
                 not_ok[key] = ("VER-RECORD-DIGEST", "claim revision id differs from claim_id@revision")
             else:
-                revisions.setdefault(rec["claim_id"], []).append((key, rec))
+                revisions.setdefault(rec["claim_id"], []).append((key, rec, False))
         elif kind == "basin_ref":
             if digest(rec) != e["record_digest"] or not _basin_id_ok(rec) or rec.get("id") != eid:
                 not_ok[key] = ("VER-RECORD-SEAL", "basin reference does not verify (digest, anchor id)")
@@ -322,13 +334,17 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
 
     for claim_id, items in sorted(revisions.items()):
         items.sort(key=lambda it: it[1]["revision"])
-        try:
-            chain_ok = verify_chain([ClaimRevision.from_dict(r) for _k, r in items])
-        except Exception:
-            chain_ok = False
-        if not chain_ok:
-            for k, _r in items:
-                not_ok[k] = ("VER-CHAIN", f"claim {claim_id}: revision chain is broken, truncated at the head or has a gap")
+        # every non-stub revision already verified on its own; check the links around any stub gap
+        chain_problem = claim_links_problem([r for _k, r, _s in items])
+        if chain_problem is not None:
+            for k, _r, _s in items:
+                not_ok[k] = ("VER-CHAIN", f"claim {claim_id}: {chain_problem}")
+                withheld_ok.discard(k)
+        else:
+            for k, _r, is_stub in items:           # a stub excuses only itself
+                if is_stub:
+                    not_ok[k] = ("VER-RECORD-SEAL", "revision withheld for privacy")
+                    withheld_ok.add(k)
 
     sealed = [e for e in bundle.records if e["kind"] not in UNSEALED_KINDS]
     bad_ids = sorted({eid for (_k, eid) in not_ok})
@@ -338,9 +354,7 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
     declared = (bundle.coverage or {}).get("unverifiable_ids", [])
     for (kind, eid), (rule, why) in sorted(not_ok.items()):
         if eid in declared:
-            withheld = (kind == "run" and eid in stub_runs) or (
-                kind == "claim_revision" and eid.rpartition("@")[0] in stub_claims)
-            if withheld:
+            if (kind, eid) in withheld_ok:
                 res.notes.append(f"{kind}:{eid} declared unverifiable ({rule}: {why})")
             else:
                 # a declaration cannot launder a defect: only a privacy-withheld row is acceptable partiality
@@ -349,6 +363,10 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         else:
             res.fail(rule, why, f"{kind}:{eid}")
     cov = bundle.coverage or {}
+    derived_withheld = sorted(eid for (_k, eid) in withheld_ok)
+    if "withheld_ids" in cov and sorted(cov["withheld_ids"]) != derived_withheld:
+        res.fail("VER-UNVERIFIABLE", f"declared withheld ids {sorted(cov['withheld_ids'])} differ from the privacy "
+                                     f"stubs derived from stub shape and digests {derived_withheld}")
     if cov.get("records_total") != res.records_total or cov.get("records_verified") != res.records_verified \
             or sorted(declared) != bad_ids:
         res.fail("VER-COVERAGE",
@@ -362,6 +380,10 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         # A privacy-withheld row that kept its record digest is a run entry too (it lands in
         # unverifiable_ids) but is counted under withheld_for_privacy, not sealed; a withheld row
         # with no digest has no entry at all. So sealed <= run entries <= sealed + withheld.
+        derived_run_stubs = sum(1 for (k, _i) in withheld_ok if k == "run")
+        if derived_run_stubs > withheld_n:
+            res.fail("VER-RUN-ROWS", f"{derived_run_stubs} run stubs derived but run_rows counts only "
+                                     f"{withheld_n} withheld_for_privacy rows")
         if not sealed_n <= n_runs <= sealed_n + withheld_n:
             res.fail("VER-RUN-ROWS", f"run_rows says {sealed_n} sealed and {withheld_n} withheld rows, which cannot "
                                      f"account for the {n_runs} run records the bundle lists "

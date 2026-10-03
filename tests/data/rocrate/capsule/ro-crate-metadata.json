@@ -888,11 +888,11 @@
     {
       "@id": "bundle.json",
       "@type": "File",
-      "contentSize": "7649",
+      "contentSize": "7673",
       "description": "Sealed AI-Hydro Bundle (aihydro.bundle/1): content-addressed objects and located records.",
       "encodingFormat": "application/json",
       "name": "bundle.json",
-      "sha256": "43aa548479cd4e333605404a0170b71d7a9f117be84c81ab927ee60166c122d1"
+      "sha256": "55328f699ffbf395a2f0a81d6b516e1fbdefdcc72896a9606111f23ef9f93667"
     },
     {
       "@id": "capsule_manifest.json",

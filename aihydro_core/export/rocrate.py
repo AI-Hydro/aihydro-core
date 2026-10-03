@@ -38,7 +38,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 from urllib.parse import quote
 
 from aihydro_core.records import (
@@ -49,10 +49,12 @@ from aihydro_core.records import (
     BundleError,
     ReplayStatus,
     coverage_complete,
+    is_digest,
     replay_rank,
     resolve_location,
     split_location,
     verify_binding,
+    verify_record_dict,
 )
 
 ROCRATE_CONTEXT = "https://w3id.org/ro/crate/1.3/context"
@@ -755,21 +757,128 @@ def _bound_run_body(entry, unverifiable: bool, record, body) -> Optional[Mapping
     return body if sealed == binding["digest"] else None
 
 
+#: The fixed shape of a privacy-withheld run-log row (tools ``privacy.export_run_log``).
+RUN_STUB_KEYS = frozenset({"redacted_for_privacy", "run_id", "session_id", "timestamp", "tool_name",
+                           "record_digest", "entry_digest", "reason", "record"})
+#: The fixed shape of a privacy-withheld claim revision (tools ``claim_records._stub``).
+CLAIM_STUB_KEYS = frozenset({"redacted_for_privacy", "session_id", "claim_id", "revision", "supersedes",
+                             "revision_digest", "record_digest", "recorded_at", "reason"})
+
+
+def run_stub_problem(entry: Mapping[str, Any], body: Mapping[str, Any], session_id: str):
+    """``None`` if ``body`` is an acceptable privacy-withheld stub of run ``entry``, else
+    ``(rule, message)``. Withholding excuses only the body binding: the stub must have exactly the
+    stub shape, name this run and this session, carry the entry's ``record_digest``, and any
+    ``record`` it keeps must still verify and agree. A bare ``redacted_for_privacy`` flag excuses nothing."""
+    if body.get("redacted_for_privacy") is not True:
+        return ("VER-STUB-SHAPE", "redacted_for_privacy is not exactly true")
+    extra_keys = sorted(set(body) - RUN_STUB_KEYS)
+    if extra_keys:
+        return ("VER-STUB-SHAPE", f"a withheld row may carry no body keys beyond the stub shape: {extra_keys}")
+    if body.get("run_id") != entry["id"]:
+        return ("VER-RECORD-DIGEST", "stub run_id is missing or differs from the bundle entry id")
+    if body.get("session_id") != session_id:
+        return ("VER-SESSION", "stub session_id is missing or differs from the bundle's session_id")
+    if body.get("record_digest") != entry.get("record_digest"):
+        return ("VER-RECORD-DIGEST", "stub record_digest differs from the bundle entry")
+    ed = body.get("entry_digest")
+    binding = entry.get("binding")
+    if is_digest(ed) and isinstance(binding, Mapping) and binding.get("digest") != ed:
+        return ("VER-BINDING", "stub entry_digest differs from the declared binding digest")
+    if "record" in body:
+        rec = body["record"]
+        if not isinstance(rec, Mapping) or not verify_record_dict(dict(rec)):
+            return ("VER-RECORD-SEAL", "the record a stub keeps does not verify")
+        if rec.get("record_digest") != entry.get("record_digest") or rec.get("run_id") != entry["id"]:
+            return ("VER-RECORD-DIGEST", "the record a stub keeps differs from the bundle entry")
+        if rec.get("session_id") != session_id:
+            return ("VER-SESSION", "the record a stub keeps has a missing or foreign session_id")
+        sealed = (rec.get("extra") or {}).get("entry_digest") if isinstance(rec.get("extra"), Mapping) else None
+        if is_digest(ed) and sealed != ed:
+            return ("VER-BINDING", "stub entry_digest differs from the kept record's sealed entry_digest")
+    return None
+
+
+def claim_stub_problem(entry: Mapping[str, Any], rec: Mapping[str, Any], session_id: str):
+    """``None`` if ``rec`` is an acceptable withheld stub of claim-revision ``entry``, else ``(rule, message)``.
+    The stub excuses only its own seal (and the chain gap that causes): it must have the stub shape, name
+    this claim, revision and session, carry the entry's ``record_digest`` and well-formed chain links."""
+    if rec.get("redacted_for_privacy") is not True:
+        return ("VER-STUB-SHAPE", "redacted_for_privacy is not exactly true")
+    extra_keys = sorted(set(rec) - CLAIM_STUB_KEYS)
+    if extra_keys:
+        return ("VER-STUB-SHAPE", f"a withheld revision may carry no keys beyond the stub shape: {extra_keys}")
+    if entry["id"] != f"{rec.get('claim_id')}@{rec.get('revision')}":
+        return ("VER-RECORD-DIGEST", "stub claim_id/revision differ from the bundle entry id")
+    if rec.get("session_id") != session_id:
+        return ("VER-SESSION", "stub session_id is missing or differs from the bundle's session_id")
+    if rec.get("record_digest") != entry.get("record_digest"):
+        return ("VER-RECORD-DIGEST", "stub record_digest differs from the bundle entry")
+    if not is_digest(rec.get("revision_digest")):
+        return ("VER-STUB-SHAPE", "stub revision_digest is not a digest")
+    sup, n = rec.get("supersedes"), rec.get("revision")
+    if (n == 0 and sup is not None) or (isinstance(n, int) and n > 0 and not is_digest(sup)):
+        return ("VER-STUB-SHAPE", "stub supersedes is inconsistent with its revision number")
+    return None
+
+
+def claim_links_problem(items: Sequence[Mapping[str, Any]]) -> Optional[str]:
+    """Chain links around any gap, without seals: contiguous revision numbers from 0, same claim
+    and session, ``supersedes`` equal to the previous ``revision_digest``. ``items`` are the claim's
+    revision dicts (stubs included) in revision order."""
+    prev = None
+    for i, r in enumerate(items):
+        if r.get("revision") != i:
+            return f"revision numbering broken at position {i} (a revision is missing or duplicated)"
+        if r.get("claim_id") != items[0].get("claim_id") or r.get("session_id") != items[0].get("session_id"):
+            return f"mixed claim or session at revision {i}"
+        if not is_digest(r.get("revision_digest")):
+            return f"bad revision_digest at revision {i}"
+        if prev is not None and r.get("supersedes") != prev.get("revision_digest"):
+            return f"link broken at revision {i}"
+        prev = r
+    return None
+
+
 def _require_privacy_withheld(bundle: Bundle, unverifiable: set, records: Mapping[str, Any],
                               bodies: Mapping[str, Any]) -> None:
-    """Partial coverage is honest only for privacy-withheld records. A run entry must have a located
-    body with ``redacted_for_privacy is True``; a claim revision needs a located record of the same
-    claim with that flag. Any other declared-unverifiable record is a defect, not partiality."""
-    stub_claims = {k.split(":", 1)[1].rpartition("@")[0] for k, r in records.items()
-                   if k.startswith("claim_revision:") and isinstance(r, Mapping) and r.get("redacted_for_privacy") is True}
+    """Partial coverage is honest only for privacy-withheld records, judged from stub shape and
+    digests (never from the flag alone). Anything else declared unverifiable is a defect."""
+    claims: Dict[str, List[Any]] = {}
+    for e in bundle.records:
+        if e["kind"] == "claim_revision":
+            claims.setdefault(e["id"].rpartition("@")[0], []).append(e)
     for e in bundle.records:
         if e["kind"] in UNSEALED_KINDS or e["id"] not in unverifiable:
             continue
-        body = bodies.get(record_key(e["kind"], e["id"]))
-        ok = ((e["kind"] == "run" and isinstance(body, Mapping) and body.get("redacted_for_privacy") is True)
-              or (e["kind"] == "claim_revision" and e["id"].rpartition("@")[0] in stub_claims))
-        if not ok:
-            raise ValueError(f"{e['kind']}:{e['id']} is declared unverifiable but is not withheld for privacy; "
+        label = f"{e['kind']}:{e['id']}"
+        problem = None
+        if e["kind"] == "run":
+            body = bodies.get(record_key("run", e["id"]))
+            if not isinstance(body, Mapping) or body.get("redacted_for_privacy") is not True:
+                problem = "not a privacy-withheld stub"
+            else:
+                p = run_stub_problem(e, body, bundle.session_id)
+                problem = p[1] if p else None
+        elif e["kind"] == "claim_revision":
+            rec = records.get(record_key("claim_revision", e["id"]))
+            if not isinstance(rec, Mapping) or rec.get("redacted_for_privacy") is not True:
+                problem = "not a privacy-withheld stub"
+            else:
+                p = claim_stub_problem(e, rec, bundle.session_id)
+                problem = p[1] if p else None
+                if problem is None:
+                    sibs = []
+                    for x in claims.get(e["id"].rpartition("@")[0], []):
+                        r = records.get(record_key("claim_revision", x["id"]))
+                        if isinstance(r, Mapping):
+                            sibs.append(r)
+                    sibs.sort(key=lambda r: r.get("revision") if isinstance(r.get("revision"), int) else -1)
+                    problem = claim_links_problem(sibs)
+        else:
+            problem = "only run and claim-revision records can be privacy-withheld"
+        if problem:
+            raise ValueError(f"{label} is declared unverifiable but is not withheld for privacy ({problem}); "
                              "refusing to project a defect as partial coverage")
 
 

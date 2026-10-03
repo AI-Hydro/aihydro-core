@@ -590,17 +590,179 @@ def test_privacy_withheld_run_is_acceptable_partiality(tmp_path):
     assert res.ok and any("claim.1" in n for n in res.notes) and "VER-UNVERIFIABLE" not in res.rules
 
 
-def test_privacy_withheld_claim_revision_is_acceptable_partiality(cap):
+def _claim_stub(rev: dict) -> dict:
+    return {"redacted_for_privacy": True, "session_id": rev["session_id"], "claim_id": rev["claim_id"],
+            "revision": rev["revision"], "supersedes": rev.get("supersedes"), "revision_digest": rev["revision_digest"],
+            "record_digest": rev["record_digest"], "recorded_at": rev["recorded_at"],
+            "reason": "withheld for privacy (test)"}
+
+
+def _withhold_claim_rev(cap, n):
     revs = json.loads((cap / "records/claim_revisions.json").read_text())
-    revs[1] = {**revs[1], "redacted_for_privacy": True}        # withheld stub: the seal no longer holds
+    revs[n] = _claim_stub(revs[n])
     (cap / "records/claim_revisions.json").write_text(json.dumps(revs, indent=2, sort_keys=True) + "\n")
     _sync_objects(cap, {"records/claim_revisions.json"})
-    ids = [f"{CLAIM_ID}@{n}" for n in range(3)]               # the chain breaks for the whole claim
-    _declare(cap, ids, 9)
+    return revs
+
+
+def test_privacy_withheld_claim_revision_is_acceptable_partiality(cap):
+    _withhold_claim_rev(cap, 1)
+    _reseal_bundle(cap, lambda b: setattr(b, "coverage", {
+        "records_verified": 11, "records_total": 12, "unverifiable_ids": [f"{CLAIM_ID}@1"],
+        "withheld_ids": [f"{CLAIM_ID}@1"]}))                     # only the stub itself is unverifiable
     _regen(cap)
     res = verify_crate(cap)
     assert res.ok, res.failures
-    assert "VER-UNVERIFIABLE" not in res.rules and len(res.notes) == 3
+    assert res.unverifiable_ids == [f"{CLAIM_ID}@1"] and len(res.notes) == 1   # siblings 0 and 2 verify
+
+
+# ---- fault-matrix-2 review C1 (a1-a5): the flag alone launders nothing
+def _row_edit(cap, run_id, fn):
+    rl = json.loads((cap / "run_log.json").read_text())
+    fn(rl, run_id)
+    (cap / "run_log.json").write_text(json.dumps(rl, indent=2, sort_keys=True) + "\n")
+    _sync_objects(cap, {"run_log.json"})
+
+
+def _stub_of(row):
+    rec = row["record"]
+    return {"redacted_for_privacy": True, "run_id": row["run_id"], "session_id": rec["session_id"],
+            "timestamp": row["timestamp"], "tool_name": row["tool_name"], "record_digest": rec["record_digest"],
+            "entry_digest": rec["extra"]["entry_digest"], "reason": "withheld (test)", "record": rec}
+
+
+def _declare_withheld(cap, ids):
+    runs = sum(1 for i in ids if "@" not in i)
+
+    def edit(b):
+        b.coverage = {"records_verified": 12 - len(ids), "records_total": 12, "unverifiable_ids": sorted(ids),
+                      "withheld_ids": sorted(ids)}
+        b.run_rows = {"run_log_rows": 8, "sealed": 8 - runs, "legacy_no_record": 0, "unbound": 0, "unsealable": 0,
+                      "withheld_for_privacy": runs}
+    _reseal_bundle(cap, edit)
+
+
+def _assert_laundering_refused(cap, rule_in_message=None):
+    res = verify_crate(cap)
+    assert "VER-UNVERIFIABLE" in res.rules and not res.ok, res.failures
+    if rule_in_message:
+        assert any(rule_in_message in f.message for f in res.failures if f.rule == "VER-UNVERIFIABLE")
+    b = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
+    recs, bods, files = load_inputs(cap, b)
+    with pytest.raises(ValueError, match="withheld for privacy"):
+        to_rocrate(b, recs, bods, files)
+
+
+def test_c1_a1_edited_record_with_the_flag_on_a_full_row(cap):
+    def edit(rl, rid):
+        rl[rid]["record"]["tool_version"] = "9.9.9"
+        rl[rid]["redacted_for_privacy"] = True               # flag on a row that still carries its whole body
+    _row_edit(cap, "claim.1", edit)
+    _declare_withheld(cap, ["claim.1"])
+    _assert_laundering_refused(cap, "VER-STUB-SHAPE")
+
+
+def test_c1_a2_edited_body_with_the_flag(cap):
+    def edit(rl, rid):
+        rl[rid]["evidence"] = {"uncertainty": {"x": {"value": 0.1}}}
+        rl[rid]["redacted_for_privacy"] = True
+    _row_edit(cap, "claim.1", edit)
+    _declare_withheld(cap, ["claim.1"])
+    _assert_laundering_refused(cap, "beyond the stub shape")
+
+
+def test_c1_a4_bare_stub_with_an_invented_record_digest(cap):
+    def edit(rl, rid):
+        rl[rid] = {"redacted_for_privacy": True, "run_id": rid, "session_id": "synthetic-session-1",
+                   "timestamp": rl[rid]["timestamp"], "tool_name": rl[rid]["tool_name"],
+                   "record_digest": "sha256:" + "ab" * 32, "reason": "invented"}
+    _row_edit(cap, "claim.1", edit)
+    _declare_withheld(cap, ["claim.1"])
+    _assert_laundering_refused(cap, "VER-RECORD-DIGEST")
+
+
+def test_c1_a5_stub_keeping_a_record_whose_seal_is_broken(cap):
+    def edit(rl, rid):
+        stub = _stub_of(rl[rid])
+        stub["record"] = {**stub["record"], "status": "error"}   # seal now broken
+        rl[rid] = stub
+    _row_edit(cap, "claim.1", edit)
+    _declare_withheld(cap, ["claim.1"])
+    _assert_laundering_refused(cap, "VER-RECORD-SEAL")
+
+
+def test_c1_stub_with_foreign_or_missing_session_or_run_id(cap):
+    for field, value in (("session_id", "other"), ("session_id", None), ("run_id", "someone-else")):
+        d = cap.parent / f"c-{field}-{value}"
+        shutil.copytree(cap, d)
+
+        def edit(rl, rid, field=field, value=value):
+            stub = _stub_of(rl[rid])
+            if value is None:
+                stub.pop(field)
+            else:
+                stub[field] = value
+            rl[rid] = stub
+        _row_edit(d, "claim.1", edit)
+        _declare_withheld(d, ["claim.1"])
+        _assert_laundering_refused(d)
+
+
+def test_c1_genuine_run_stub_with_and_without_its_record_is_acceptable(cap):
+    def edit(rl, rid):
+        rl[rid] = _stub_of(rl[rid])
+    _row_edit(cap, "claim.1", edit)
+    _declare_withheld(cap, ["claim.1"])
+    _regen(cap)
+    assert verify_crate(cap).ok
+    def drop_record(rl, rid):
+        rl[rid].pop("record")                                # tools keeps no record when it held a path
+    _row_edit(cap, "claim.1", drop_record)
+    _regen(cap)
+    assert verify_crate(cap).ok
+
+
+def test_c1_a3_claim_stub_does_not_excuse_a_broken_sibling(cap):
+    revs = json.loads((cap / "records/claim_revisions.json").read_text())
+    revs[0] = {**revs[0], "content": {**revs[0]["content"], "status": "verified"}}   # seal broken
+    revs[2] = _claim_stub(revs[2])                           # forged stub revision
+    (cap / "records/claim_revisions.json").write_text(json.dumps(revs, indent=2, sort_keys=True) + "\n")
+    _sync_objects(cap, {"records/claim_revisions.json"})
+    ids = [f"{CLAIM_ID}@{n}" for n in range(3)]
+    _declare_withheld(cap, ids)
+    res = verify_crate(cap)
+    msgs = [f.entity for f in res.failures if f.rule == "VER-UNVERIFIABLE"]
+    assert f"claim_revision:{CLAIM_ID}@0" in msgs and not res.ok
+    b = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
+    recs, bods, files = load_inputs(cap, b)
+    with pytest.raises(ValueError, match="withheld for privacy"):
+        to_rocrate(b, recs, bods, files)
+
+
+def test_c1_claim_stub_with_broken_links_fails_the_whole_chain(cap):
+    revs = _withhold_claim_rev(cap, 1)
+    stub = json.loads((cap / "records/claim_revisions.json").read_text())
+    stub[1]["supersedes"] = "sha256:" + "cd" * 32            # link to nothing
+    (cap / "records/claim_revisions.json").write_text(json.dumps(stub, indent=2, sort_keys=True) + "\n")
+    _sync_objects(cap, {"records/claim_revisions.json"})
+    _declare_withheld(cap, [f"{CLAIM_ID}@1"])
+    res = verify_crate(cap)
+    assert not res.ok and "VER-UNVERIFIABLE" in res.rules
+    assert revs
+
+
+def test_c1_declared_withheld_ids_must_equal_the_derived_set(cap):
+    def edit(rl, rid):
+        rl[rid] = _stub_of(rl[rid])
+    _row_edit(cap, "claim.1", edit)
+    _reseal_bundle(cap, lambda b: setattr(b, "coverage", {"records_verified": 11, "records_total": 12,
+                                                          "unverifiable_ids": ["claim.1"], "withheld_ids": []}))
+    res = verify_crate(cap)
+    assert "VER-UNVERIFIABLE" in res.rules and any("withheld ids" in f.message for f in res.failures)
+    with pytest.raises(Exception):
+        Bundle(session_id="s", coverage={"records_verified": 0, "records_total": 1, "unverifiable_ids": ["a"],
+                                         "withheld_ids": ["b"]})
+
 
 
 def test_stub_flag_must_be_exactly_true(tmp_path):

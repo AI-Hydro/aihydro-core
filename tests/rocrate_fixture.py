@@ -130,8 +130,11 @@ def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None
     }
     bodies = {rid: {k: v for k, v in row.items() if k != "record"} for rid, row in rows.items()}
     for rid in redact or []:                       # privacy stub: record kept, body withheld
-        rows[rid] = {"run_id": rid, "redacted_for_privacy": True, "record_digest": rows[rid]["record"]["record_digest"],
-                     "record": rows[rid]["record"]}
+        rec = rows[rid]["record"]
+        rows[rid] = {"redacted_for_privacy": True, "run_id": rid, "session_id": SID, "timestamp": _T[rid],
+                     "tool_name": rows[rid]["tool_name"], "record_digest": rec["record_digest"],
+                     "entry_digest": rec["extra"]["entry_digest"], "reason": "withheld for privacy (fixture)",
+                     "record": rec}
     (root / "run_log.json").write_bytes(_dump(rows))
 
     content = lambda n: {  # noqa: E731
@@ -185,7 +188,7 @@ def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None
     entries.append(make_record_entry("claim_view", CLAIM_ID, None, None,
                                      make_location("session.json", ["claims", CLAIM_ID]), make_binding(claim_view)))
     sealed_n = len(entries) - 1
-    cov = make_coverage(sealed_n - len(redact or []), sealed_n, redact or [])
+    cov = make_coverage(sealed_n - len(redact or []), sealed_n, redact or [], withheld_ids=redact or [])
     replay_sha = hashlib.sha256((root / "replay.py").read_bytes()).hexdigest()
     bundle = Bundle(
         session_id=SID, objects=objects, records=entries, created_at=CREATED,

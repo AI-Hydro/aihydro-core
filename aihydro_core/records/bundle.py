@@ -229,10 +229,16 @@ def _check_record(r: Any) -> None:
             raise BundleError(f"records[{kind}:{rid}] has a binding but no body_location")
 
 
-def make_coverage(verified: int, total: int, unverifiable_ids: Iterable[str] = ()) -> Dict[str, Any]:
-    """``{records_verified, records_total, unverifiable_ids}`` (sorted ids)."""
+def make_coverage(verified: int, total: int, unverifiable_ids: Iterable[str] = (),
+                  withheld_ids: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+    """``{records_verified, records_total, unverifiable_ids[, withheld_ids]}`` (sorted ids).
+
+    ``withheld_ids`` (optional, exporter-declared) names the unverifiable records that are privacy-withheld
+    stubs; ``verify_crate`` derives that set from stub shape and digests and requires them to be equal."""
     cov = {"records_verified": verified, "records_total": total,
            "unverifiable_ids": sorted(set(unverifiable_ids))}
+    if withheld_ids is not None:
+        cov["withheld_ids"] = sorted(set(withheld_ids))
     _check_coverage(cov)
     return cov
 
@@ -248,6 +254,10 @@ def _check_coverage(c: Any) -> None:
         raise BundleError("coverage.records_verified exceeds records_total")
     if not isinstance(u, list) or not all(isinstance(i, str) for i in u) or u != sorted(set(u)):
         raise BundleError("coverage.unverifiable_ids must be a sorted list of unique strings")
+    w = c.get("withheld_ids")
+    if w is not None and (not isinstance(w, list) or not all(isinstance(i, str) for i in w)
+                          or w != sorted(set(w)) or not set(w) <= set(u)):
+        raise BundleError("coverage.withheld_ids must be a sorted list of unique ids, a subset of unverifiable_ids")
     if len(u) != t - v:
         raise BundleError("coverage.unverifiable_ids must name exactly the unverified records")
 

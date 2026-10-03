@@ -4,7 +4,8 @@
   "coverage": {
     "records_total": 12,
     "records_verified": 12,
-    "unverifiable_ids": []
+    "unverifiable_ids": [],
+    "withheld_ids": []
   },
   "created_at": "2026-10-03T12:00:00Z",
   "exporter": {
@@ -78,7 +79,7 @@
       "size": 601
     }
   ],
-  "record_digest": "sha256:8c71dd0b274c5556bba1d2542ed6fff674e62ec277613c3e442dd1a804cab4d6",
+  "record_digest": "sha256:a5a834813bd3fc7622745674ed5bfebb52fed501212bae18fc37d944d53e232f",
   "records": [
     {
       "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
