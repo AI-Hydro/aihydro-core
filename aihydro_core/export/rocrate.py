@@ -119,16 +119,16 @@ TERMS: Dict[str, Tuple[str, str]] = {
 #: projection, the validator and (by import) aihydro-tools' scrubber.
 LOCAL_ROOTS = ("Users", "home", "private", "var", "tmp", "opt", "root", "mnt", "Volumes", "srv",
                "scratch", "etc")
-_B = r"(?:^|[\s\"'(=,;\[])"            # boundary before a path ('/' and ':' excluded: URLs)
+_B = r"(?:^|[\s\"'(])"                  # boundary before a path ('/', ':' and '=' excluded: URLs, k=v text)
 #: Local-path leak detector: POSIX roots, file:// URLs, Windows drive and UNC paths,
 #: //server/share, ~/ and $HOME-style references.
 PATH_PATTERN = re.compile(
     r"file://"
     r"|(?:^|[\s\"'(=:,;\[])/(?:" + "|".join(LOCAL_ROOTS) + r")/"
-    r"|(?:^|[\s\"'(=:,;\[])[A-Za-z]:[\\/]"
-    r"|" + _B + r"//[^/\s]+/[^/\s]+"
+    r"|(?:^|[\s\"'(=,;\[])[A-Za-z]:(?:\\|/(?:Users|Windows|Documents|Program|home|tmp|temp)\b)"
+    r"|" + _B + r"//[A-Za-z0-9_-]+/[^/\s]+"             # //server/share; a dotted host is a protocol-relative URL
     r"|\\\\[^\\\s]+\\[^\\\s]+"
-    r"|" + _B + r"~(?:[A-Za-z_][A-Za-z0-9_-]*)?/"
+    r"|" + _B + r"~(?:[A-Za-z_][A-Za-z0-9_-]*)?/[A-Za-z._]"          # ~/notes, ~alice/x; not "~/-" or "~/2"
     r"|\$\{?HOME\b|%USERPROFILE%|%HOMEPATH%"
 )
 
@@ -269,6 +269,10 @@ def to_rocrate(
         raise ValueError("the Bundle must carry its replay assessment and coverage")
     # Only archive-integrity-level facts can be projected: no recomputation or cross-check
     # entity exists in this projection yet, so a stronger level cannot be supported.
+    if any(replay_rank(bundle.replay.get(k, bundle.replay["status"])) >= replay_rank(ReplayStatus.RECOMPUTED)
+           for k in ("manifest_status", "checked_status")):
+        raise ValueError("a manifest or checked level of recomputed or above needs a recomputation entity "
+                         "that this projection cannot emit; refusing to state it")
     if replay_rank(bundle.replay["status"]) >= replay_rank(ReplayStatus.CROSS_CHECK):
         raise ValueError(f"replay level {bundle.replay['status']!r} needs a recomputation or cross-check "
                          "entity that this projection cannot emit; refusing to state it")
@@ -796,6 +800,19 @@ def find_symlinks(directory: "str | Path") -> List[str]:
     return sorted(found)
 
 
+def find_irregular(directory: "str | Path") -> List[str]:
+    """Relative paths of entries that are neither a regular file, a directory nor a symlink
+    (FIFO, socket, device). They are never opened."""
+    root = Path(directory)
+    found: List[str] = []
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        for name in filenames:
+            full = Path(dirpath) / name
+            if not full.is_symlink() and not full.is_file():
+                found.append(full.relative_to(root).as_posix())
+    return sorted(found)
+
+
 def _walk_files(root: Path) -> List[Path]:
     out = []
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
@@ -820,6 +837,9 @@ def scan_files(directory: "str | Path", *, strict: bool = True) -> Dict[str, Dic
         links = find_symlinks(root)
         if links:
             raise ValueError(f"capsule contains symlinks, which are never exported: {links}")
+        odd = find_irregular(root)
+        if odd:
+            raise ValueError(f"capsule contains non-regular files (FIFO, socket, device): {odd}")
     out: Dict[str, Dict[str, Any]] = {}
     for p in _walk_files(root):
         rel = p.relative_to(root).as_posix()
@@ -876,6 +896,9 @@ def write_manifest_sha256(directory: "str | Path") -> Path:
     links = find_symlinks(root)
     if links:
         raise ValueError(f"capsule contains symlinks, which are never exported: {links}")
+    odd = find_irregular(root)
+    if odd:
+        raise ValueError(f"capsule contains non-regular files (FIFO, socket, device): {odd}")
     lines = []
     for p in _walk_files(root):
         rel = p.relative_to(root).as_posix()

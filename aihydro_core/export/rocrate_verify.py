@@ -39,6 +39,7 @@ from aihydro_core.export.rocrate import (
     CRATE_FILE,
     derive_gates,
     dumps_crate,
+    find_irregular,
     find_symlinks,
     load_inputs,
     scan_files,
@@ -147,6 +148,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
     # ---- 2. objects and files
     for link in find_symlinks(root):
         res.fail("VER-UNLISTED-FILE", "symlinks are never part of a capsule", link)
+    for odd in find_irregular(root):
+        res.fail("VER-UNLISTED-FILE", "not a regular file (FIFO, socket or device); capsules hold regular files only", odd)
     files = scan_files(root, strict=False)
     objects = {o["ref"]: o for o in bundle.objects}
     for path in sorted(set(files) - set(objects) - set(NON_OBJECT_FILES)):
@@ -181,9 +184,15 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
     else:
         res.fail("VER-OBJECTS-MANIFEST", f"{MANIFEST_FILE} is missing")
     # the verifier the crate names must be a file in this capsule
-    sha = (bundle.replay or {}).get("assessor", {}).get("sha256") if isinstance((bundle.replay or {}).get("assessor"), dict) else None
-    if sha and not any(f["sha256"] == sha for f in files.values()):
-        res.fail("VER-ASSESSOR", "replay.assessor.sha256 matches no file in the capsule")
+    assessor = (bundle.replay or {}).get("assessor")
+    if isinstance(assessor, dict):
+        named = assessor.get("url") if assessor.get("url") in files else VERIFIER_FILE
+        if not assessor.get("sha256"):
+            res.fail("VER-ASSESSOR", f"replay.assessor must carry the sha256 of {named}")
+        elif named not in files:
+            res.fail("VER-ASSESSOR", f"the verifier file {named} is not in the capsule", named)
+        elif files[named]["sha256"] != assessor["sha256"]:
+            res.fail("VER-ASSESSOR", f"replay.assessor.sha256 is not the digest of the file it names ({named})", named)
 
     # ---- 2b. replay level is anchored to the on-disk manifest and to what was checked (M1)
     rp = bundle.replay or {}

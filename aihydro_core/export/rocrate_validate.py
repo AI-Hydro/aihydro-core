@@ -322,10 +322,17 @@ def validate_graph(crate: Any, directory: "str | Path | None" = None) -> List[Fi
                 continue
             if replay_rank(level) > replay_rank(cap):
                 err("HON-REPLAY-LEVEL", f"replay level {level.value} exceeds {other} {cap.value}", root["@id"])
-    if level is not None and replay_rank(level) >= replay_rank(ReplayStatus.RECOMPUTED):
-        if not any(RECOMPUTATION_TYPE in _as_list(e.get("additionalType")) for e in ents.values()):
-            err("HON-RECOMPUTED", f"{level.value} requires a recomputation entity (additionalType {RECOMPUTATION_TYPE}); none exists",
-                root["@id"])
+    # the level and both ceilings: a crate may not state recomputation anywhere without an entity (N1)
+    stated = {"replayStatus": level}
+    for other in ("manifestStatus", "checkedStatus"):
+        try:
+            stated[other] = ReplayStatus(pv_by_prop[other].get("value"))
+        except (KeyError, ValueError):
+            pass
+    over = {k: v for k, v in stated.items() if v is not None and replay_rank(v) >= replay_rank(ReplayStatus.RECOMPUTED)}
+    if over and not any(RECOMPUTATION_TYPE in _as_list(e.get("additionalType")) for e in ents.values()):
+        err("HON-RECOMPUTED", f"{', '.join(f'{k}={v.value}' for k, v in sorted(over.items()))} requires a recomputation "
+                              f"entity (additionalType {RECOMPUTATION_TYPE}); none exists", root["@id"])
     if level is not None and replay_rank(level) >= replay_rank(ReplayStatus.CROSS_CHECK):
         if not any(CROSSCHECK_TYPE in _as_list(e.get("additionalType")) or RECOMPUTATION_TYPE in _as_list(e.get("additionalType"))
                    for e in ents.values()):

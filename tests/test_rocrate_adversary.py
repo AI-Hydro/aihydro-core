@@ -12,7 +12,14 @@ from pathlib import Path
 
 import pytest
 
-from aihydro_core.export import load_inputs, scan_files, to_rocrate, validate_crate, verify_crate
+from aihydro_core.export import (
+    load_inputs,
+    scan_files,
+    to_rocrate,
+    validate_crate,
+    validate_graph,
+    verify_crate,
+)
 from aihydro_core.export import rocrate as rc
 from aihydro_core.export.rocrate_validate import errors
 from aihydro_core.records import Bundle, BundleError, RunRecord, digest, make_binding
@@ -250,6 +257,9 @@ SAFE = [
     "https://geoconnex.us/usgs/monitoring-location/01013500", "https://example.org/home/page",
     "http://host/Users/x", "(with ~0/~1 escaping)", "a/b/c", "2026-10-03T10:00:04.000+00:00", "sha256:abc",
     "run_log.json#/sigs.1/record", "data/streamflow_x.json", "usgs:01013500", "x ~1 y", "100% /s",
+    # N4: protocol-relative URLs and ~/-style text
+    "//geoconnex.us/ref", "see //doi.org/10.1000/x", "value=//x/y", "tolerance ~/- 0.03", "ratio ~/2", "k:/v", " a:/b",
+    "$HOMER", "user~joe/", "a ~/ b",
 ]
 
 
@@ -310,3 +320,64 @@ def test_a11_working_view_edit_stays_labelled_unsealed(cap):
 def test_a8_licence_string_swap_is_a_known_limit(cap):
     _refresh_bag(cap)
     assert verify_crate(cap).ok
+
+
+# ------------------------------------------------------------------- N1-N3
+def _crate_dict(d):
+    return json.loads((d / "ro-crate-metadata.json").read_text())
+
+
+@pytest.mark.parametrize("prop", ["manifestStatus", "checkedStatus"])
+def test_n1_recomputed_ceilings_need_a_recomputation_entity(cap, prop):
+    crate = _crate_dict(cap)
+    for e in crate["@graph"]:
+        if e.get("propertyID") == prop:
+            e["value"] = "recomputed"
+    found = errors(validate_graph(crate, cap))
+    assert "HON-RECOMPUTED" in {f.rule for f in found}
+
+
+@pytest.mark.parametrize("key", ["manifest_status", "checked_status"])
+def test_n1_projection_refuses_recomputed_ceilings(cap, key):
+    b = Bundle.from_dict(json.loads((cap / "bundle.json").read_text()))
+    b.replay = {**b.replay, key: "recomputed"}
+    b.seal()
+    recs, bods, files = load_inputs(cap, b)
+    with pytest.raises(ValueError):
+        to_rocrate(b, recs, bods, files)
+
+
+def test_n2_assessor_sha_is_required_and_must_be_the_named_file(cap):
+    def drop_sha(b):
+        b.replay["assessor"].pop("sha256")
+    _reseal_bundle(cap, drop_sha)
+    _try_regen(cap)
+    assert "VER-ASSESSOR" in _rules(cap)
+    # a sha that belongs to *another* capsule file is not the verifier
+    other = scan_files(cap)["README.md"]["sha256"]
+    _reseal_bundle(cap, lambda b: b.replay["assessor"].update(sha256=other))
+    _try_regen(cap)
+    assert "VER-ASSESSOR" in _rules(cap)
+
+
+def test_n2_assessor_may_name_another_file_via_url(cap):
+    files = scan_files(cap)
+    _reseal_bundle(cap, lambda b: b.replay["assessor"].update(url="README.md", sha256=files["README.md"]["sha256"]))
+    _regen(cap)
+    assert "VER-ASSESSOR" not in _rules(cap)
+    _reseal_bundle(cap, lambda b: b.replay["assessor"].update(url="README.md", sha256=files["replay.py"]["sha256"]))
+    _try_regen(cap)
+    assert "VER-ASSESSOR" in _rules(cap)
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="needs POSIX FIFOs")
+def test_n3_fifo_in_capsule_fails_and_is_never_opened(cap):
+    os.mkfifo(cap / "data" / "pipe.json")
+    res = verify_crate(cap)                              # would hang if the FIFO were opened
+    assert not res.ok
+    assert any(f.rule == "VER-UNLISTED-FILE" and f.entity == "data/pipe.json" and "regular" in f.message
+               for f in res.failures)
+    with pytest.raises(ValueError):
+        scan_files(cap)
+    with pytest.raises(ValueError):
+        rc.write_manifest_sha256(cap)
