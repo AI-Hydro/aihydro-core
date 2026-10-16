@@ -124,14 +124,17 @@ LOCAL_ROOTS = ("Users", "home", "private", "var", "tmp", "opt", "root", "mnt", "
                "scratch", "etc")
 _B = r"(?:^|[\s\"'(])"                  # boundary before a path ('/', ':' and '=' excluded: URLs, k=v text)
 #: Local-path leak detector: POSIX roots, file:// URLs, Windows drive and UNC paths,
-#: //server/share, ~/ and $HOME-style references.
+#: //server/share, ~/ and $HOME-style references. ``~name/`` is NOT a path (``~mm/day``, ``~A/L``).
+#: Refused by design (indistinguishable from a leak): ``//host/x`` without a dot (``//NLDAS/FORA`` looks like
+#: ``//server/share``) and group paths under a system-root name (``/var/streamflow``, ``/root/precip``).
+#: Not refused: ``A:/B``, ``c:/n`` (a drive needs a backslash or a known Windows directory).
 PATH_PATTERN = re.compile(
     r"file://"
     r"|(?:^|[\s\"'(=:,;\[])/(?:" + "|".join(LOCAL_ROOTS) + r")/"
     r"|(?:^|[\s\"'(=,;\[])[A-Za-z]:(?:\\|/(?:Users|Windows|Documents|Program|home|tmp|temp)\b)"
     r"|" + _B + r"//[A-Za-z0-9_-]+/[^/\s]+"             # //server/share; a dotted host is a protocol-relative URL
     r"|\\\\[^\\\s]+\\[^\\\s]+"
-    r"|" + _B + r"~(?:[A-Za-z_][A-Za-z0-9_-]*)?/[A-Za-z._]"          # ~/notes, ~alice/x; not "~/-" or "~/2"
+    r"|" + _B + r"~/[A-Za-z._]"          # ~/notes only (home shorthand); "~name/" is text (~mm/day), as are "~/-" and "~/2"
     r"|\$\{?HOME\b|%USERPROFILE%|%HOMEPATH%"
 )
 

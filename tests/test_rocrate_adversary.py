@@ -243,14 +243,15 @@ def test_a14_symlinks_are_refused(cap, tmp_path):
 def test_s6_version_matches_distribution_metadata():
     import aihydro_core
     text = (Path(aihydro_core.__file__).resolve().parent.parent / "pyproject.toml").read_text()
-    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.7"
+    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.8"
 
 
 # ----------------------------------------------------------------------- S7
 LEAKS = [
     "/Users/a/b", "/home/a", "ran in /home/a/x", "/private/var/x", "/tmp/x", "/opt/conda/bin", "/scratch/job1/out",
     "/mnt/data/x", "/Volumes/Disk/x", "/srv/www", "/root/.ssh", "/etc/passwd", "file:///x", "FILE:///x"[:0] or "file://h/x",
-    "//server/share/file", "\\\\server\\share\\file", "C:\\Users\\a", "C:/Users/a", "~/notes", "~alice/notes",
+    "//server/share/file", "\\\\server\\share\\file", "C:\\Users\\a", "C:/Users/a", "~/notes", "see ~/Documents/notes/bfi.md",
+    "//NLDAS/FORA", "HDF /var/streamflow", "zarr /root/precip", "group /private/obs",   # refused by design
     "$HOME/x", "${HOME}/x", "%USERPROFILE%\\x", "path=/Users/a", '"/home/b/c"', "(/tmp/z)",
 ]
 SAFE = [
@@ -260,6 +261,10 @@ SAFE = [
     # N4: protocol-relative URLs and ~/-style text
     "//geoconnex.us/ref", "see //doi.org/10.1000/x", "value=//x/y", "tolerance ~/- 0.03", "ratio ~/2", "k:/v", " a:/b",
     "$HOMER", "user~joe/", "a ~/ b",
+    # tilde-letters-slash is approximation text, not ~user/ (corpus)
+    "~mm/day", "about ~A/L", "~PET/P", "runoff ~m3/s", "~alice/notes",
+    # drive-like and ratio shapes (corpus)
+    "A:/B ratio", "X:/Y", "c:/n", "the A:/B ratio is unchanged",
 ]
 
 
