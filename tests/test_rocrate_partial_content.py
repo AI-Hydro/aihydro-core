@@ -101,9 +101,70 @@ def test_cs1_only_unsealed_legacy_rows_is_partial_unsealed_not_ok(tmp_path):
     assert out.returncode == 3 and json.loads(out.stdout)["partial_reasons"] == ["unsealed"]
 
 
-def test_cs1_a_mix_with_verified_records_stays_plain_ok_and_golden_is_ok(cap):
+def test_cs2_golden_has_no_unsealed_rows_and_is_plain_ok(cap):
     res = verify_crate(cap)
-    assert res.ok and res.status == "ok" and res.partial_reasons == []
+    assert res.ok and res.status == "ok" and res.partial_reasons == [] and res.exit_code == 0
+
+
+def _legacy_row_variant(cap, *, bare_stub_flag_stripped=False):
+    """One run-log row loses its record (a legacy row); the other 7 stay sealed."""
+    def edit(rl, rid):
+        row = _stub_of(rl[rid]) if bare_stub_flag_stripped else rl[rid]
+        row = {k: v for k, v in row.items() if k not in ("record", "redacted_for_privacy")}
+        rl[rid] = row
+    _row_edit(cap, "claim.1", edit)
+
+    def fix(b):
+        b.records = [r for r in b.records if not (r["kind"] == "run" and r["id"] == "claim.1")]
+        b.coverage = {"records_verified": 11, "records_total": 11, "unverifiable_ids": []}
+        b.run_rows = {"run_log_rows": 8, "sealed": 7, "legacy_no_record": 1, "unbound": 0, "unsealable": 0,
+                      "withheld_for_privacy": 0}
+    _reseal_bundle(cap, fix)
+    _sync_objects(cap, set())
+    _regen(cap)
+
+
+def test_cs2_mixed_sealed_and_unsealed_rows_is_partial_unsealed(cap):
+    _legacy_row_variant(cap)
+    res = verify_crate(cap)
+    assert res.ok, res.failures
+    assert res.partial_reasons == ["unsealed"] and res.status == "ok_partial_unsealed" and res.exit_code == 3
+    assert res.records_verified > 0                              # not only the zero-verified case
+
+
+def test_cs2_stub_flag_stripped_into_a_bare_legacy_row_is_not_plain_ok(cap):
+    _legacy_row_variant(cap, bare_stub_flag_stripped=True)
+    res = verify_crate(cap)
+    assert res.status != "ok" and "unsealed" in res.partial_reasons and res.exit_code == 3
+
+
+def test_cs2_declared_legacy_rows_alone_make_it_partial(cap):
+    # run_rows.legacy_no_record > 0 with no matching log row is still an honest "unsealed" declaration
+    _reseal_bundle(cap, lambda b: setattr(b, "run_rows", {"run_log_rows": 9, "sealed": 8, "legacy_no_record": 1,
+                                                          "unbound": 0, "unsealable": 0, "withheld_for_privacy": 0}))
+    _regen(cap)
+    res = verify_crate(cap)
+    assert "unsealed" in res.partial_reasons and res.exit_code == 3
+
+
+def test_cs2_status_precedence(tmp_path):
+    d = tmp_path / "c"
+    build_capsule(d, redact=["claim.1"])
+    rl = json.loads((d / "run_log.json").read_text())
+    del rl["start.1"]["record"]                                   # also one legacy row
+    (d / "run_log.json").write_text(json.dumps(rl, indent=2, sort_keys=True) + "\n")
+
+    def fix(b):
+        b.records = [r for r in b.records if not (r["kind"] == "run" and r["id"] == "start.1")]
+        b.coverage = {"records_verified": 10, "records_total": 11, "unverifiable_ids": ["claim.1"],
+                      "withheld_ids": ["claim.1"]}
+        b.run_rows = {"run_log_rows": 8, "sealed": 6, "legacy_no_record": 1, "unbound": 0, "unsealable": 0,
+                      "withheld_for_privacy": 1}
+    _reseal_bundle(d, fix)
+    _sync_objects(d, {"run_log.json"})
+    _regen(d)
+    res = verify_crate(d)
+    assert res.ok and res.partial_reasons == ["withheld", "unsealed"] and res.status == "ok_partial_withheld"
 
 
 # ---- deleted projected keys

@@ -510,8 +510,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                 res.fail("VER-RUN-ROWS", f"{len(flagged)} run-log rows have the privacy-stub shape but run_rows counts "
                                          f"only {rr_['withheld_for_privacy']} withheld_for_privacy (a stub relabelled as "
                                          "another kind of row?)")
-        if res.records_verified == 0 and (unsealed_rows or (bundle.run_rows or {}).get("legacy_no_record")):
-            res.mark_partial("unsealed")                   # nothing was verified: never a plain ok
+        if unsealed_rows or (bundle.run_rows or {}).get("legacy_no_record"):
+            res.mark_partial("unsealed")                   # an unverified part is never a plain ok (C-S2)
     cov = bundle.coverage or {}
     derived_withheld = sorted(eid for (_k, eid) in withheld_ok)
     if "withheld_ids" in cov and sorted(cov["withheld_ids"]) != derived_withheld:
