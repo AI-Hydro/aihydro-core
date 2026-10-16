@@ -1,4 +1,9 @@
-"""CLI: ``python -m aihydro_core.export.rocrate {validate,verify} DIR`` (nonzero exit on failure)."""
+"""CLI: ``python -m aihydro_core.export.rocrate {validate,verify} DIR``.
+
+Exit codes: ``validate`` 0 = no errors, 1 = errors. ``verify`` 0 = ok, 1 = failed, 3 = verified but partial
+(privacy-withheld records or heads, or nothing but unsealed rows: ``--json`` gives ``status`` and
+``partial_reasons``), so a consumer can reject partial-by-withholding by policy.
+"""
 from __future__ import annotations
 
 import argparse
@@ -34,12 +39,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"FAIL {f.rule:22} {f.entity or '-'}: {f.message}")
         for n in res.notes:
             print(f"NOTE {n}")
-        label = {"ok": "OK", "failed": "FAIL", "ok_partial_withheld": "OK (PARTIAL: privacy-withheld)"}[res.status]
+        label = {"ok": "OK", "failed": "FAIL", "ok_partial_withheld": "OK (PARTIAL: privacy-withheld)",
+                 "ok_partial_unsealed": "OK (PARTIAL: unsealed rows only)"}[res.status]
         print(f"verify: {label} ({res.records_verified}/{res.records_total} records verified)")
         if res.ok:
             print("note: integrity is not origin; this does not show who produced the capsule.")
-        if res.status == "ok_partial_withheld":
-            print("note: partial by withholding; exit code 3 lets a consumer reject this by policy.")
+        if res.partial:
+            print("note: partial result; exit code 3 lets a consumer reject this by policy.")
     return res.exit_code
 
 

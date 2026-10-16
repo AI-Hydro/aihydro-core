@@ -92,8 +92,11 @@ Process Run Crate 0.6 `ro-crate-metadata.json` (stdlib only; ADR-005).
 privacy rules by id; `verify_crate(dir)` re-verifies every file digest and
 record seal, re-checks body bindings and claim chains, **regenerates** the crate
 from the bundle and byte-compares it with the shipped one. CLI:
-`python -m aihydro_core.export.rocrate {validate,verify} DIR` (nonzero exit on
-failure). The crate states that integrity is not origin. Its few AI-Hydro terms
+`python -m aihydro_core.export.rocrate {validate,verify} DIR`. Exit codes:
+`validate` 0 (no errors) or 1; `verify` 0 (`ok`), 1 (`failed`) or 3 (verified but
+partial: privacy-withheld records or heads, or only unsealed rows; `--json` gives
+`status` and `partial_reasons`, so a consumer can reject partial results by
+policy). The crate states that integrity is not origin. Its few AI-Hydro terms
 live under an **unregistered** namespace (`PROFILE_NS`, OPEN-8); the crate
 claims no AI-Hydro profile. Golden fixture: `tests/data/rocrate/capsule/`.
 

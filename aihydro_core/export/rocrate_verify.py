@@ -89,7 +89,9 @@ class Failure:
 
 #: Outcome statuses (CLI exit codes): ok 0, failed 1, ok_partial_withheld 3.
 STATUS_OK, STATUS_FAILED, STATUS_PARTIAL = "ok", "failed", "ok_partial_withheld"
-EXIT_CODES = {STATUS_OK: 0, STATUS_FAILED: 1, STATUS_PARTIAL: 3}
+STATUS_PARTIAL_UNSEALED = "ok_partial_unsealed"
+#: exit 3 covers both partial statuses; ``VerifyResult.partial_reasons`` says why (``withheld`` / ``unsealed``).
+EXIT_CODES = {STATUS_OK: 0, STATUS_FAILED: 1, STATUS_PARTIAL: 3, STATUS_PARTIAL_UNSEALED: 3}
 
 #: session claim field -> the sealed revision content field it must agree with
 HEAD_FIELDS = (("claim", "text"), ("claim_type", "claim_type"), ("status", "status"),
@@ -136,18 +138,20 @@ def claim_head_problem(claim: Mapping[str, Any], rows: List[Mapping[str, Any]]):
         return None
     head_withheld = k != len(rows) - 1
     head = rows[k]["content"]
-    differing = [sk for sk, hk in HEAD_FIELDS if sk in claim and hk in head and claim[sk] != head[hk]]
+    # a projected key the revision carries must be present in the session claim: deleting it is a difference
+    differing = [sk for sk, hk in HEAD_FIELDS if hk in head and (sk not in claim or claim[sk] != head[hk])]
     if not head_withheld:
         return differing, [], rows[k].get("revision"), False
     hk_of = dict(HEAD_FIELDS)
-    unverifiable = [f for f in differing if f in ENUM_FIELDS or (_scrubbed(claim[f]) and (
+    unverifiable = [f for f in differing if f in ENUM_FIELDS or (f in claim and _scrubbed(claim[f]) and (
         f != "claim" or _strip_markers(claim[f]) == _strip_markers(head[hk_of[f]])))]
     return [f for f in differing if f not in unverifiable], unverifiable, rows[k].get("revision"), True
 
 
 class VerifyResult:
     def __init__(self) -> None:
-        self.partial = False                 # verified except declared privacy-withheld records / withheld heads
+        self.partial = False                 # verified except privacy-withheld records / withheld heads / unsealed rows
+        self.partial_reasons: List[str] = []   # subset of {"withheld", "unsealed"}
         self.failures: List[Failure] = []
         self.unverifiable_ids: List[str] = []
         self.notes: List[str] = []
@@ -162,7 +166,11 @@ class VerifyResult:
     def status(self) -> str:
         """``ok``, ``ok_partial_withheld`` (verified except declared privacy-withheld records: consumers may
         reject this by policy) or ``failed``."""
-        return STATUS_FAILED if self.failures else (STATUS_PARTIAL if self.partial else STATUS_OK)
+        if self.failures:
+            return STATUS_FAILED
+        if "withheld" in self.partial_reasons:
+            return STATUS_PARTIAL
+        return STATUS_PARTIAL_UNSEALED if self.partial_reasons else STATUS_OK
 
     @property
     def exit_code(self) -> int:
@@ -175,8 +183,14 @@ class VerifyResult:
     def rules(self) -> List[str]:
         return sorted({f.rule for f in self.failures})
 
+    def mark_partial(self, reason: str) -> None:
+        self.partial = True
+        if reason not in self.partial_reasons:
+            self.partial_reasons.append(reason)
+
     def to_dict(self) -> Dict[str, Any]:
-        return {"ok": self.ok, "status": self.status, "partial": self.partial, "failures": [f.to_dict() for f in self.failures],
+        return {"ok": self.ok, "status": self.status, "partial": self.partial,
+                "partial_reasons": sorted(self.partial_reasons), "failures": [f.to_dict() for f in self.failures],
                 "unverifiable_ids": self.unverifiable_ids, "notes": self.notes,
                 "records_verified": self.records_verified, "records_total": self.records_total}
 
@@ -441,16 +455,17 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         for cid, items in sorted(revisions.items()):
             claim = session_claims.get(cid)
             if not isinstance(claim, dict):
+                res.fail("VER-HEAD", "the claim has a sealed chain but is absent from session.json", f"claim:{cid}")
                 continue
             items = sorted(items, key=lambda it: it[1]["revision"])
             found = claim_head_problem(claim, [r for _k, r, _s in items])
             if found is None:
                 res.notes.append(f"claim {cid}: every revision is withheld; session.json cannot be compared with the chain")
-                res.partial = True
+                res.mark_partial("withheld")
                 continue
             diff, unverifiable, rev, withheld_head = found
             if unverifiable:
-                res.partial = True
+                res.mark_partial("withheld")
                 res.notes.append(f"claim {cid}: unverifiable: head withheld, so session.json's "
                                  f"{', '.join(unverifiable)} cannot be compared with the sealed chain (partial coverage)")
             if diff:
@@ -474,7 +489,29 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
         else:
             res.fail(rule, why, f"{kind}:{eid}")
     if withheld_ok:
-        res.partial = True
+        res.mark_partial("withheld")
+    # partial is derived from content, not from the bundle's declarations (C-S1): any run-log row with the
+    # privacy-stub shape makes the result partial, and the bundle must count it as withheld
+    rl_rows: Any = None
+    if "run_log.json" in objects:
+        try:
+            rl_rows = _read_json(root / "run_log.json")
+        except (OSError, ValueError):
+            rl_rows = None
+    if isinstance(rl_rows, dict):
+        flagged = sorted(r for r, row in rl_rows.items() if isinstance(row, dict) and row.get("redacted_for_privacy") is True)
+        unsealed_rows = sum(1 for row in rl_rows.values() if isinstance(row, dict)
+                            and row.get("redacted_for_privacy") is not True
+                            and not (isinstance(row.get("record"), dict) and row["record"].get("record_digest")))
+        if flagged:
+            res.mark_partial("withheld")
+            rr_ = bundle.run_rows
+            if rr_ is not None and rr_["withheld_for_privacy"] < len(flagged):
+                res.fail("VER-RUN-ROWS", f"{len(flagged)} run-log rows have the privacy-stub shape but run_rows counts "
+                                         f"only {rr_['withheld_for_privacy']} withheld_for_privacy (a stub relabelled as "
+                                         "another kind of row?)")
+        if res.records_verified == 0 and (unsealed_rows or (bundle.run_rows or {}).get("legacy_no_record")):
+            res.mark_partial("unsealed")                   # nothing was verified: never a plain ok
     cov = bundle.coverage or {}
     derived_withheld = sorted(eid for (_k, eid) in withheld_ok)
     if "withheld_ids" in cov and sorted(cov["withheld_ids"]) != derived_withheld:
