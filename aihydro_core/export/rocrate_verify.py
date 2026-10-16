@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
@@ -86,8 +87,67 @@ class Failure:
         return {"rule": self.rule, "entity": self.entity, "message": self.message}
 
 
+#: Outcome statuses (CLI exit codes): ok 0, failed 1, ok_partial_withheld 3.
+STATUS_OK, STATUS_FAILED, STATUS_PARTIAL = "ok", "failed", "ok_partial_withheld"
+EXIT_CODES = {STATUS_OK: 0, STATUS_FAILED: 1, STATUS_PARTIAL: 3}
+
+#: session claim field -> the sealed revision content field it must agree with
+HEAD_FIELDS = (("claim", "text"), ("claim_type", "claim_type"), ("status", "status"),
+               ("confidence", "confidence"), ("confidence_rationale", "confidence_rationale"),
+               ("limitations", "limitations"))
+ENUM_FIELDS = ("status", "confidence", "claim_type")
+#: Markers the exporter's scrub wrote into legacy data (same list and semantics as the tools stdlib mirror).
+#: A marker must START its token, so "not<tmp>" is a difference, not an excuse.
+SCRUB_MARKERS = ("<abs>", "~/", "workspace:", "session-data:")
+_MARKER_TOKEN = re.compile(r"(?<!\S)(?:" + "|".join(re.escape(m) for m in SCRUB_MARKERS) + r")\S*")
+
+
+def _strip_markers(value: Any) -> Any:
+    if isinstance(value, str):
+        return " ".join(_MARKER_TOKEN.sub("", value).split())
+    if isinstance(value, list):
+        return [_strip_markers(v) for v in value]
+    return value
+
+
+def _scrubbed(value: Any) -> bool:
+    if isinstance(value, str):
+        return bool(_MARKER_TOKEN.search(value))
+    if isinstance(value, list):
+        return any(_scrubbed(v) for v in value)
+    return False
+
+
+def claim_head_problem(claim: Mapping[str, Any], rows: List[Mapping[str, Any]]):
+    """Compare the session working view ``claim`` with the sealed head of its chain ``rows`` (stubs included,
+    revision order). Returns ``None`` when there is nothing to compare, else ``(diff, unverifiable, revision,
+    head_withheld)``. Semantics are those of tools' ``check_claims_against_heads`` (the reference):
+
+    - head = last non-stub revision with content; if the real head is a privacy stub the head is withheld;
+    - only fields the revision projects are compared (``HEAD_FIELDS``);
+    - under a withheld head an enumerated field (status, confidence, claim_type) may legitimately have changed
+      in the withheld revision: unverifiable, not a failure; a string field that differs fails unless it carries
+      a scrub marker that STARTS its token (and, for the claim text, the text left after removing marker tokens
+      equals the head's).
+    """
+    k = next((i for i in range(len(rows) - 1, -1, -1)
+              if not rows[i].get("redacted_for_privacy") and isinstance(rows[i].get("content"), dict)), None)
+    if k is None:
+        return None
+    head_withheld = k != len(rows) - 1
+    head = rows[k]["content"]
+    differing = [sk for sk, hk in HEAD_FIELDS if sk in claim and hk in head and claim[sk] != head[hk]]
+    if not head_withheld:
+        return differing, [], rows[k].get("revision"), False
+    hk_of = dict(HEAD_FIELDS)
+    unverifiable = [f for f in differing if f in ENUM_FIELDS or (_scrubbed(claim[f]) and (
+        f != "claim" or _strip_markers(claim[f]) == _strip_markers(head[hk_of[f]])))]
+    return [f for f in differing if f not in unverifiable], unverifiable, rows[k].get("revision"), True
+
+
 class VerifyResult:
     def __init__(self) -> None:
+        self.partial = False                 # verified except declared privacy-withheld records / withheld heads
         self.failures: List[Failure] = []
         self.unverifiable_ids: List[str] = []
         self.notes: List[str] = []
@@ -98,6 +158,16 @@ class VerifyResult:
     def ok(self) -> bool:
         return not self.failures
 
+    @property
+    def status(self) -> str:
+        """``ok``, ``ok_partial_withheld`` (verified except declared privacy-withheld records: consumers may
+        reject this by policy) or ``failed``."""
+        return STATUS_FAILED if self.failures else (STATUS_PARTIAL if self.partial else STATUS_OK)
+
+    @property
+    def exit_code(self) -> int:
+        return EXIT_CODES[self.status]
+
     def fail(self, rule: str, message: str, entity: Optional[str] = None) -> None:
         self.failures.append(Failure(rule, message, entity))
 
@@ -106,7 +176,7 @@ class VerifyResult:
         return sorted({f.rule for f in self.failures})
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"ok": self.ok, "failures": [f.to_dict() for f in self.failures],
+        return {"ok": self.ok, "status": self.status, "partial": self.partial, "failures": [f.to_dict() for f in self.failures],
                 "unverifiable_ids": self.unverifiable_ids, "notes": self.notes,
                 "records_verified": self.records_verified, "records_total": self.records_total}
 
@@ -360,6 +430,33 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
             not_ok[key] = ("VER-STUB-ANCHOR", anchor)
             withheld_ok.discard(key)
 
+    # the session working view must agree with the sealed head on the fields the revision projects (M06f)
+    session_claims: Any = None
+    if "session.json" in objects:
+        try:
+            session_claims = _read_json(root / "session.json").get("claims")
+        except (OSError, ValueError, AttributeError):
+            session_claims = None
+    if isinstance(session_claims, dict):
+        for cid, items in sorted(revisions.items()):
+            claim = session_claims.get(cid)
+            if not isinstance(claim, dict):
+                continue
+            items = sorted(items, key=lambda it: it[1]["revision"])
+            found = claim_head_problem(claim, [r for _k, r, _s in items])
+            if found is None:
+                res.notes.append(f"claim {cid}: every revision is withheld; session.json cannot be compared with the chain")
+                res.partial = True
+                continue
+            diff, unverifiable, rev, withheld_head = found
+            if unverifiable:
+                res.partial = True
+                res.notes.append(f"claim {cid}: unverifiable: head withheld, so session.json's "
+                                 f"{', '.join(unverifiable)} cannot be compared with the sealed chain (partial coverage)")
+            if diff:
+                res.fail("VER-HEAD", f"session.json differs from the sealed {'last non-withheld' if withheld_head else 'head'} "
+                                     f"revision {rev} in {', '.join(diff)} (edited after the last revision?)", f"claim:{cid}")
+
     sealed = [e for e in bundle.records if e["kind"] not in UNSEALED_KINDS]
     bad_ids = sorted({eid for (_k, eid) in not_ok})
     res.records_total = len(sealed)
@@ -376,6 +473,8 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
                          f"{kind}:{eid}")
         else:
             res.fail(rule, why, f"{kind}:{eid}")
+    if withheld_ok:
+        res.partial = True
     cov = bundle.coverage or {}
     derived_withheld = sorted(eid for (_k, eid) in withheld_ok)
     if "withheld_ids" in cov and sorted(cov["withheld_ids"]) != derived_withheld:
@@ -453,7 +552,9 @@ def verify_crate(directory: "str | Path") -> VerifyResult:
 
     # ---- 6. BagIt-style manifest
     bag = root / BAGIT_FILE
-    if bag.is_file():
+    if not bag.is_file():
+        res.fail("VER-BAGIT", f"{BAGIT_FILE} is missing: the BagIt manifest is part of the export contract", BAGIT_FILE)
+    else:
         listed_bag: Dict[str, str] = {}
         for line in bag.read_text(encoding="utf-8").splitlines():
             if not line.strip():

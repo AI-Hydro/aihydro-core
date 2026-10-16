@@ -140,6 +140,7 @@ def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None
     content = lambda n: {  # noqa: E731
         "schema": "aihydro.claim_revision/2", "text": "The baseflow index is 0.585 (90% CI 0.571-0.599).",
         "claim_type": "empirical_result", "status": ["draft", "supported", "supported"][n % 3],
+        "confidence": "medium", "confidence_rationale": "synthetic fixture rationale",
         "scope": {"basins": ["01013500"], "metric": "baseflow_index",
                   "basin_refs": [{"id": BASIN_REF["id"], "label": "01013500"}]},
         "evidence_spans": [{"source_type": "run", "source_id": "sigs.1", "metric_ref": "baseflow_index"}],
@@ -158,6 +159,8 @@ def build_capsule(directory: "str | Path", *, redact: Optional[List[str]] = None
         revs.append(rev.to_dict())
     (root / "records/claim_revisions.json").write_bytes(_dump(revs))
     claim_view = {"id": CLAIM_ID, "claim": "The baseflow index is 0.585 (90% CI 0.571-0.599).", "status": "supported",
+                  "claim_type": "empirical_result", "confidence": "medium",
+                  "confidence_rationale": "synthetic fixture rationale", "limitations": ["synthetic fixture"],
                   "scope": {"basin_refs": [{"id": BASIN_REF["id"], "label": "01013500"}]},
                   "evidence_spans": [{"source_type": "run", "source_id": "sigs.1", "metric_ref": "baseflow_index"}]}
     (root / "session.json").write_bytes(_dump({"session_id": SID, "claims": {CLAIM_ID: claim_view}}))

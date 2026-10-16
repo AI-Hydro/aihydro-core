@@ -34,10 +34,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"FAIL {f.rule:22} {f.entity or '-'}: {f.message}")
         for n in res.notes:
             print(f"NOTE {n}")
-        print(f"verify: {'OK' if res.ok else 'FAIL'} ({res.records_verified}/{res.records_total} records verified)")
+        label = {"ok": "OK", "failed": "FAIL", "ok_partial_withheld": "OK (PARTIAL: privacy-withheld)"}[res.status]
+        print(f"verify: {label} ({res.records_verified}/{res.records_total} records verified)")
         if res.ok:
             print("note: integrity is not origin; this does not show who produced the capsule.")
-    return 0 if res.ok else 1
+        if res.status == "ok_partial_withheld":
+            print("note: partial by withholding; exit code 3 lets a consumer reject this by policy.")
+    return res.exit_code
 
 
 if __name__ == "__main__":

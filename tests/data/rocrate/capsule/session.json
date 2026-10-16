@@ -2,6 +2,9 @@
   "claims": {
     "bfi-test-claim": {
       "claim": "The baseflow index is 0.585 (90% CI 0.571-0.599).",
+      "claim_type": "empirical_result",
+      "confidence": "medium",
+      "confidence_rationale": "synthetic fixture rationale",
       "evidence_spans": [
         {
           "metric_ref": "baseflow_index",
@@ -10,6 +13,9 @@
         }
       ],
       "id": "bfi-test-claim",
+      "limitations": [
+        "synthetic fixture"
+      ],
       "scope": {
         "basin_refs": [
           {

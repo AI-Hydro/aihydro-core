@@ -1,5 +1,5 @@
 {
-  "bundle_id": "sha256:cfca0197268178f3c38a7f09f813b3270db4ff7f23d04423c481ed952a029039",
+  "bundle_id": "sha256:9c00728f770c46f58dfe2b50be6ef6f2e005336d0e03b5b8f494344ed840cd78",
   "canonicalization": "aihydro.c14n/1",
   "coverage": {
     "records_total": 12,
@@ -28,7 +28,7 @@
       "size": 52
     },
     {
-      "digest": "sha256:ffc67b90c6c224742b7a5a2ad14168f4b231ef617c821b825fa471cb60ec2472",
+      "digest": "sha256:60a6c538d408b7c810477e092673fd203a7a40e53973c1d456fca065d58c7333",
       "media_type": "application/json",
       "ref": "capsule_manifest.json",
       "role": "manifest",
@@ -51,11 +51,11 @@
       "size": 47
     },
     {
-      "digest": "sha256:d56dcc9300bfdef0ac5f6153ba26b425d3b11fe7de80f549c4b80a07896cbeed",
+      "digest": "sha256:f62785e80a06c2028a8d56e8b0da09fe8643429c6e44702200b3b64629a6fe1a",
       "media_type": "application/json",
       "ref": "records/claim_revisions.json",
       "role": "claim_revisions",
-      "size": 4945
+      "size": 5218
     },
     {
       "digest": "sha256:fff3adf566fc9cee1243723eb5dca379ed2118d15a0367a012fc29e3f216dcab",
@@ -72,14 +72,14 @@
       "size": 14053
     },
     {
-      "digest": "sha256:fb3c853a30ccc8863bcb59b3c26408a2148ce0978bf004111fa748ecb0240ee1",
+      "digest": "sha256:30f6ccf092b78e8d69f46fdbe9ff601a5633fceaea9e40b1cc4f460ab24ce70a",
       "media_type": "application/json",
       "ref": "session.json",
       "role": "session",
-      "size": 601
+      "size": 792
     }
   ],
-  "record_digest": "sha256:9a227bb3b328711b731375dcf2c2136f22cf949ea0c8687a37c091b988d451bd",
+  "record_digest": "sha256:3e3387fa5be1ff894bb50a4fe0b1747381c310fa536044f11087bbd6199b2408",
   "records": [
     {
       "id": "aihydro:basin:sha256:7d668536474282bdef5eb810f69e6d96b0f5d39dcfc8b05ac1666b1c49331d5a",
@@ -90,24 +90,24 @@
     {
       "id": "bfi-test-claim@0",
       "kind": "claim_revision",
-      "record_digest": "sha256:64b07f2de0a69f95367077982eaa24522acc91decc63599b96f98320e3aed92d",
+      "record_digest": "sha256:43be63a0e7841f81895108f510a1429ca9975781967af4ace6f72bef063739d2",
       "record_location": "records/claim_revisions.json#/0"
     },
     {
       "id": "bfi-test-claim@1",
       "kind": "claim_revision",
-      "record_digest": "sha256:90bd53aa4635956f03d6f716a8d5772dedaf168677fe22892300ba8808bfa188",
+      "record_digest": "sha256:f4f8846ca34389dba2d5968aa80df17092568572f9ca2776cd2ad7d286a8b82f",
       "record_location": "records/claim_revisions.json#/1"
     },
     {
       "id": "bfi-test-claim@2",
       "kind": "claim_revision",
-      "record_digest": "sha256:8e98565d757217cd252a1e1a08b0268cb9092090ff41114e98054cefedc0df35",
+      "record_digest": "sha256:25cd7e3e120fd002254adb69bdb6f0f8181736649074483a3168bc1d88f22509",
       "record_location": "records/claim_revisions.json#/2"
     },
     {
       "binding": {
-        "digest": "sha256:05fee7bbe785db483ef90f20a058d6ca863967ef37991d9c9d4e180045e6e2b7",
+        "digest": "sha256:c000f000f0cace05b0c05aa9ae9ae4fd77dad82827d94f5bc5a663ef2eb7ee07",
         "scheme": "aihydro.entry/1"
       },
       "body_location": "session.json#/claims/bfi-test-claim",

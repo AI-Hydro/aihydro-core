@@ -243,7 +243,7 @@ def test_a14_symlinks_are_refused(cap, tmp_path):
 def test_s6_version_matches_distribution_metadata():
     import aihydro_core
     text = (Path(aihydro_core.__file__).resolve().parent.parent / "pyproject.toml").read_text()
-    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.8"
+    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.9"
 
 
 # ----------------------------------------------------------------------- S7
@@ -310,14 +310,14 @@ def test_a7_full_reseal_passes_but_says_integrity_is_not_origin(cap):
     assert "not origin" in out.stdout
 
 
-def test_a11_working_view_edit_stays_labelled_unsealed(cap):
+def test_a11_working_view_edit_is_now_caught_against_the_sealed_head(cap):
     s = json.loads((cap / "session.json").read_text())
     s["claims"][CLAIM_ID]["claim"] = "certain"
     (cap / "session.json").write_text(json.dumps(s, indent=2, sort_keys=True) + "\n")
     _reseal_bundle(cap, lambda b: [r.update(binding=make_binding(s["claims"][CLAIM_ID])) for r in b.records if r["kind"] == "claim_view"])
     _sync_objects(cap, {"session.json"})
     _regen(cap)
-    assert verify_crate(cap).ok
+    assert "VER-HEAD" in _rules(cap)                          # M06f: the view must agree with the sealed head
     view = _crate(cap)[f"#claim-{CLAIM_ID}-view"]
     assert "working view, unsealed" in view["name"] and "aihydro:recordDigest" not in view
 
