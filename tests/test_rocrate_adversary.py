@@ -243,7 +243,7 @@ def test_a14_symlinks_are_refused(cap, tmp_path):
 def test_s6_version_matches_distribution_metadata():
     import aihydro_core
     text = (Path(aihydro_core.__file__).resolve().parent.parent / "pyproject.toml").read_text()
-    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.10"
+    assert aihydro_core.__version__ == re.search(r'^version = "([^"]+)"', text, re.M).group(1) == "0.2.11"
 
 
 # ----------------------------------------------------------------------- S7

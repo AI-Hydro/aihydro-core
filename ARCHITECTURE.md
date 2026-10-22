@@ -54,7 +54,9 @@ aihydro_core/
 │   ├── claim.py         Claim protocol + ClaimStore protocol
 │   ├── audit.py         Auditor protocol (can_audit, audit → AuditResult)
 │   ├── uncertainty.py   UncertaintyProvider protocol; re-exports _bootstrap symbols
-│   └── _bootstrap.py    bootstrap_ci · block_bootstrap_ci · bootstrap_dict
+│   ├── _bootstrap.py    bootstrap_ci · block_bootstrap_ci · bootstrap_dict ·
+│   │                    water_year · grouped_bootstrap · annual_lag1_autocorrelation
+│   └── scope.py         make_scope · water_year_sampling_scope (stdlib-only; {varies,assumes,excludes})
 │                        UncertaintyResult dataclass
 │                        (numpy in [science] extra; stdlib-only for import)
 │

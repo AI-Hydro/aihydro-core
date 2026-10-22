@@ -32,6 +32,9 @@ from typing import Literal
 UncertaintyMethod = Literal[
     "bootstrap",        # non-parametric resampling with replacement
     "block_bootstrap",  # block-resampling for autocorrelated series
+    "bootstrap_iid",    # emitted by bootstrap_ci / bootstrap_dict (IID resampling)
+    "bootstrap_block",  # emitted by block_bootstrap_ci / bootstrap_dict(use_block=True)
+    "bootstrap_group",  # emitted by grouped_bootstrap (whole-group resampling)
     "analytical",       # closed-form CI (e.g. normal approximation)
     "expert",           # expert elicitation (qualitative CI)
     "none",             # explicitly no uncertainty estimated
@@ -130,6 +133,9 @@ _BOOTSTRAP_EXPORTS = {
     "bootstrap_ci",
     "block_bootstrap_ci",
     "bootstrap_dict",
+    "water_year",
+    "grouped_bootstrap",
+    "annual_lag1_autocorrelation",
 }
 
 
@@ -152,4 +158,7 @@ if TYPE_CHECKING:
         bootstrap_ci,
         block_bootstrap_ci,
         bootstrap_dict,
+        water_year,
+        grouped_bootstrap,
+        annual_lag1_autocorrelation,
     )

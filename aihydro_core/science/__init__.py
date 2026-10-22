@@ -35,11 +35,16 @@ from .uncertainty import (
     UncertaintyProvider,
 )
 
+from .scope import make_scope, water_year_sampling_scope, scope_excludes
+
 _BOOTSTRAP_EXPORTS = {
     "UncertaintyResult",
     "bootstrap_ci",
     "block_bootstrap_ci",
     "bootstrap_dict",
+    "water_year",
+    "grouped_bootstrap",
+    "annual_lag1_autocorrelation",
 }
 
 
@@ -62,6 +67,9 @@ if TYPE_CHECKING:
         bootstrap_ci,
         block_bootstrap_ci,
         bootstrap_dict,
+        water_year,
+        grouped_bootstrap,
+        annual_lag1_autocorrelation,
     )
 
 __all__ = [
@@ -84,4 +92,11 @@ __all__ = [
     "bootstrap_ci",
     "block_bootstrap_ci",
     "bootstrap_dict",
+    "water_year",
+    "grouped_bootstrap",
+    "annual_lag1_autocorrelation",
+    # scope (stdlib-only)
+    "make_scope",
+    "water_year_sampling_scope",
+    "scope_excludes",
 ]

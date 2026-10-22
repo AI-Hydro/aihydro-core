@@ -1,5 +1,38 @@
 # aihydro-core progress
 
+## 2026-10-22 — Science Wave 3 PR-1: grouped bootstrap (branch `vision2040/w3-core`, 0.2.11, additive)
+
+- Added `aihydro_core.science.water_year` (USGS: Oct 1 starts the year, labelled by end year).
+- Added `grouped_bootstrap(fns, n_items, groups, n=2000, ci=0.90, random_state=0, min_groups=10)`:
+  resamples whole groups with replacement, hands each `fn` the concatenated item-index array
+  (paired statistics stay paired), percentile intervals. Output: `method="bootstrap_group"`,
+  `n_groups`, `group`, `B`, `B_valid`, `low_n` (10-19 groups) and a machine-readable `scope`.
+  Fewer than `min_groups` groups raises `ValueError` (no interval is reported).
+- Added `aihydro_core.science.scope` (stdlib-only): `make_scope`, `water_year_sampling_scope`,
+  `scope_excludes` with the critique-M6 shape `{"varies","assumes","excludes"}`; reusable by watershed.
+- Added `annual_lag1_autocorrelation` (critique S2): reports the between-year persistence the
+  grouped bootstrap does NOT capture. Its `high` flag uses a labelled engineering threshold (0.3), not a test.
+- Limitation, tested and documented: groups are exchangeable, so within-year dependence is kept
+  but between-year persistence is not.
+- Review fixes: dropped replicates are reported (`B_valid`, `valid_frac`, `ci_degraded` when <95%
+  valid, NaN CI with `ci_reason` when <50% valid or the point estimate is NaN/raises; one warning per
+  raising metric). `n >= 100`, `0 < ci < 1`, `min_groups >= 2`, NaN group labels rejected.
+  `low_n` now means < 30 groups. Metrics in one call share the same group draws.
+- Coverage (honest): percentile group bootstrap under-covers at small group counts. Seeded
+  simulation, iid years, 20 groups, nominal 90%, sample mean: 0.88 over 2000 trials (0.905 over the
+  200 trials in the test-suite; statistic-dependent, skewed/ratio statistics can be worse). Surfaced
+  as `coverage_note` / `COVERAGE_NOTE`.
+- `water_year` uses the local wall-clock date for tz-aware input (tz dropped, not converted) and
+  rejects numeric dtypes (TypeError). `scope_excludes` is conservative: excluded unless explicitly in
+  `varies`; malformed scope = excluded. `annual_lag1_autocorrelation` pairs only truly consecutive
+  years (`n_pairs`, `has_gaps`).
+- Engineering constants (named, labelled, not statistical results): `DEGRADED_VALID_FRAC=0.95`,
+  `NAN_CI_VALID_FRAC=0.5`, `MIN_LAG1_PAIRS=8` (below it lag-1 is NaN with `low_n=True`, never `high`),
+  lag-1 `high_threshold=0.3`. The coverage test asserts a band (0.82-0.95); the exact 0.905 lives in the docs only.
+- B defaults to 2000 (critique M7); the caller is responsible for building groups that are complete
+  in every aligned series and for computing the point estimate on that same set (the function
+  computes it on all `n_items`).
+
 ## 2026-10-03 — RO-Crate export (2040 slice 5 P5.2, branch `vision2040/slice5-core`, 0.2.4)
 
 - Added `aihydro_core.export`: `to_rocrate` (RO-Crate 1.3 + Process Run Crate 0.6, one

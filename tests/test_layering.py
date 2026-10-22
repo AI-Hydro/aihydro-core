@@ -74,9 +74,15 @@ def test_guard_covers_all_modules():
 # The crate verifier must be reproducible by anyone, so it may not grow a
 # dependency beyond the standard library and the record contract it verifies.
 # --------------------------------------------------------------------------- #
+# ``sys.stdlib_module_names`` exists only from Python 3.10.  On 3.9 we fall back to this
+# explicit set of stdlib top-level modules; it must cover every stdlib module the export
+# package may reasonably import (a non-stdlib name is still rejected on every version).
 _STDLIB_FALLBACK = {
-    "__future__", "argparse", "base64", "collections", "copy", "dataclasses", "datetime", "decimal",
-    "enum", "hashlib", "json", "math", "os", "pathlib", "re", "sys", "typing", "urllib",
+    "__future__", "abc", "argparse", "ast", "base64", "binascii", "collections", "contextlib",
+    "copy", "csv", "dataclasses", "datetime", "decimal", "enum", "fnmatch", "functools",
+    "hashlib", "importlib", "io", "itertools", "json", "logging", "math", "operator", "os",
+    "pathlib", "posixpath", "re", "shutil", "stat", "string", "sys", "tempfile", "textwrap",
+    "types", "typing", "unicodedata", "urllib", "uuid", "zipfile",
 }
 
 
@@ -128,3 +134,24 @@ def test_records_bundle_and_entry_are_stdlib_only():
 def test_export_layering_guard_detects_violations():
     tree = ast.parse("import numpy\nfrom aihydro_core.store import x\nimport json\nfrom aihydro_core.records import digest")
     assert _export_import_offenders(tree) == ["numpy", "aihydro_core.store"]
+
+
+def test_is_stdlib_on_every_python_version():
+    # Holds with sys.stdlib_module_names (>=3.10) and with the explicit 3.9 fallback alike.
+    assert _is_stdlib("importlib") and _is_stdlib("json") and _is_stdlib("urllib")
+    assert not _is_stdlib("numpy") and not _is_stdlib("requests") and not _is_stdlib("aihydro_core")
+
+
+def test_stdlib_fallback_covers_export_imports_and_agrees_with_runtime():
+    import sys
+    used = set()
+    for path in (_CORE_ROOT / "export").rglob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.Import):
+                used |= {a.name.split(".")[0] for a in node.names}
+            elif isinstance(node, ast.ImportFrom) and not node.level and node.module:
+                used.add(node.module.split(".")[0])
+    assert (used - {"aihydro_core"}) <= _STDLIB_FALLBACK
+    names = getattr(sys, "stdlib_module_names", None)
+    if names is not None:  # fallback must not claim non-stdlib modules
+        assert _STDLIB_FALLBACK <= set(names)
