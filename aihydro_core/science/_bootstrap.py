@@ -380,6 +380,14 @@ class GroupedBootstrapResult(UncertaintyResult, total=False):
 #: Fewer than this many groups is permitted (down to ``min_groups``) but flagged ``low_n``.
 LOW_N_GROUPS = 30
 
+#: Engineering constants (labelled, not statistical results): a metric is flagged
+#: ``ci_degraded`` below this fraction of valid replicates, and its CI is NaN below the cutoff.
+DEGRADED_VALID_FRAC = 0.95
+NAN_CI_VALID_FRAC = 0.5
+
+#: Engineering constant: minimum consecutive year-pairs for a lag-1 estimate.
+MIN_LAG1_PAIRS = 8
+
 #: Minimum replicates; fewer makes percentile tails meaningless.
 MIN_REPLICATES = 100
 
@@ -430,8 +438,8 @@ def grouped_bootstrap(
 
     Replicates where ``fn`` raises or returns a non-finite value are dropped
     and reported: ``B_valid``, ``valid_frac``; ``ci_degraded`` when
-    ``valid_frac < 0.95``; the interval is NaN (with ``ci_reason``) when
-    ``valid_frac < 0.5`` or the point estimate is NaN / raises.  A raising fn
+    ``valid_frac < DEGRADED_VALID_FRAC`` (0.95); the interval is NaN (with
+    ``ci_reason``) when ``valid_frac < NAN_CI_VALID_FRAC`` (0.5) or the point estimate is NaN / raises.  A raising fn
     logs one warning per metric with the exception type and count.
 
     Coverage (honest): percentile group bootstrap under-covers for few groups.
@@ -516,11 +524,11 @@ def grouped_bootstrap(
     for k in fns:
         samps = boot[k]
         frac = len(samps) / n
-        degraded = frac < 0.95
+        degraded = frac < DEGRADED_VALID_FRAC
         reason = ""
         if k in point_reason:
             lo = hi = float("nan"); reason = point_reason[k]; degraded = True
-        elif frac < 0.5:
+        elif frac < NAN_CI_VALID_FRAC:
             lo = hi = float("nan")
             reason = f"only {len(samps)} of {n} replicates were finite (<50%)"
         else:
@@ -556,8 +564,10 @@ def annual_lag1_autocorrelation(
     (NaN / absent) year are never treated as adjacent; ``has_gaps`` reports it.
     ``high_threshold`` is a labelled engineering threshold, not a test.
 
-    Returns ``{"r1","n_years","n_pairs","has_gaps","high","threshold"}``; ``r1``
-    is NaN (``high`` False) with fewer than 3 consecutive pairs or zero variance.
+    Returns ``{"r1","n_years","n_pairs","has_gaps","low_n","high","threshold"}``.
+    With fewer than ``MIN_LAG1_PAIRS`` (8, an engineering constant) consecutive
+    pairs, ``r1`` is NaN, ``low_n`` is True and ``high`` is never set; likewise
+    for zero variance.  ``high_threshold`` (0.3) is also an engineering constant.
     """
     v = np.asarray(values, dtype=float)
     if groups is not None:
@@ -576,14 +586,15 @@ def annual_lag1_autocorrelation(
     pair = fin[:-1] & fin[1:]
     a, b = series[:-1][pair], series[1:][pair]
     r1 = float("nan")
-    if a.size >= 3:
+    low_n = a.size < MIN_LAG1_PAIRS
+    if not low_n:
         a0, b0 = a - a.mean(), b - b.mean()
         den = float(np.sqrt((a0 * a0).sum() * (b0 * b0).sum()))
         if den > 0:
             r1 = float((a0 * b0).sum() / den)
     return {
         "r1": r1, "n_years": int(fin.sum()), "n_pairs": int(pair.sum()),
-        "has_gaps": bool(series.size and not fin.all()),
+        "has_gaps": bool(series.size and not fin.all()), "low_n": bool(low_n),
         "high": bool(np.isfinite(r1) and r1 >= high_threshold),
         "threshold": high_threshold,
     }

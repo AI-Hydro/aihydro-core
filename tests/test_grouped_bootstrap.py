@@ -201,14 +201,21 @@ class TestLag1:
 
     def test_missing_year_is_not_bridged(self):
         # alternating +/-: lag-1 is strongly negative; dropping a year must not pair its neighbours
-        v = np.array([1.0, -1.0, 1.0, np.nan, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0])
+        v = np.tile([1.0, -1.0], 10)
+        v[6] = np.nan
         r = annual_lag1_autocorrelation(v)
-        assert r["has_gaps"] is True and r["n_years"] == 9 and r["n_pairs"] == 7
+        assert r["has_gaps"] is True and r["n_years"] == 19 and r["n_pairs"] == 17
         assert r["r1"] < -0.9
         # grouped form with an absent year (1992 missing) behaves the same
-        yrs = np.array([1990, 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000])
-        r2 = annual_lag1_autocorrelation(np.arange(10) % 2 * 2 - 1.0, yrs)
-        assert r2["has_gaps"] is True and r2["n_pairs"] == 8
+        yrs = np.r_[np.arange(1990, 1992), np.arange(1993, 2013)]  # 1992 absent
+        r2 = annual_lag1_autocorrelation(np.arange(22) % 2 * 2 - 1.0, yrs)
+        assert r2["has_gaps"] is True and r2["n_pairs"] == 20
+
+    def test_fewer_than_8_pairs_is_low_n_nan_never_high(self):
+        r = annual_lag1_autocorrelation(np.arange(8.0))  # 7 pairs, perfectly persistent
+        assert r["n_pairs"] == 7 and r["low_n"] is True and np.isnan(r["r1"]) and r["high"] is False
+        r = annual_lag1_autocorrelation(np.arange(9.0))  # 8 pairs
+        assert r["low_n"] is False and r["high"] is True
 
     def test_too_short_is_nan_not_high(self):
         r = annual_lag1_autocorrelation([1.0, 2.0, 3.0])
@@ -318,8 +325,8 @@ class TestCoverage:
             r = grouped_bootstrap({"m": lambda i: x[i].mean()}, 60, wy, n=500, random_state=t)["m"]
             hit += r["ci_low"] <= 0.0 <= r["ci_high"]
         cov = hit / trials
-        assert cov == pytest.approx(0.905)  # deterministic given seeds
-        assert cov >= 0.80
+        # measured 0.905 with numpy 1.x/2.x PCG64 here; band tolerates Generator stream changes
+        assert 0.82 <= cov <= 0.95
 
     def test_coverage_note_present_and_low_n_below_30(self):
         _, wy = _daily(25)

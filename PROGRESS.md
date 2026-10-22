@@ -26,6 +26,9 @@
   rejects numeric dtypes (TypeError). `scope_excludes` is conservative: excluded unless explicitly in
   `varies`; malformed scope = excluded. `annual_lag1_autocorrelation` pairs only truly consecutive
   years (`n_pairs`, `has_gaps`).
+- Engineering constants (named, labelled, not statistical results): `DEGRADED_VALID_FRAC=0.95`,
+  `NAN_CI_VALID_FRAC=0.5`, `MIN_LAG1_PAIRS=8` (below it lag-1 is NaN with `low_n=True`, never `high`),
+  lag-1 `high_threshold=0.3`. The coverage test asserts a band (0.82-0.95); the exact 0.905 lives in the docs only.
 - B defaults to 2000 (critique M7); the caller is responsible for building groups that are complete
   in every aligned series and for computing the point estimate on that same set (the function
   computes it on all `n_items`).
