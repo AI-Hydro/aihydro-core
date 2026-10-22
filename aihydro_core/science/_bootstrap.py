@@ -7,9 +7,11 @@ Import via: from aihydro_core.science.uncertainty import bootstrap_ci, ...
 from __future__ import annotations
 
 import logging
-from typing import Callable, TypedDict
+from typing import Any, Callable, Mapping, TypedDict
 
 import numpy as np
+
+from .scope import water_year_sampling_scope
 
 log = logging.getLogger(__name__)
 
@@ -296,3 +298,172 @@ def bootstrap_dict(
             method=method, n=size, ci_level=ci,
         )
     return results
+
+
+# ---------------------------------------------------------------------------
+# Water-year grouping + grouped (cluster) bootstrap — Science Wave 3, PR-1
+# ---------------------------------------------------------------------------
+
+def water_year(dates: Any) -> np.ndarray:
+    """
+    USGS water year of each date: Oct 1 starts a water year, labelled by the
+    calendar year in which it ends (2000-10-01 .. 2001-09-30 -> 2001).
+
+    ``dates`` may be anything ``numpy.asarray(..., dtype="datetime64[D]")``
+    accepts (datetime64 arrays, pandas DatetimeIndex/Series, ISO strings,
+    ``datetime.date`` objects).  Returns an int array of the same length.
+    NaT is not supported (raises ValueError).
+    """
+    d = np.asarray(dates).astype("datetime64[D]")
+    if np.isnat(d).any():
+        raise ValueError("water_year: dates contain NaT")
+    months = d.astype("datetime64[M]")
+    years = months.astype("datetime64[Y]").astype(int) + 1970
+    month = (months.astype(int) % 12) + 1
+    return np.where(month >= 10, years + 1, years).astype(int)
+
+
+class GroupedBootstrapResult(UncertaintyResult, total=False):
+    """UncertaintyResult plus grouped-bootstrap provenance (all keys always set)."""
+    n_groups: int
+    group: str
+    B: int
+    B_valid: int
+    low_n: bool
+    scope: dict
+
+
+#: 10-19 groups is permitted but flagged ``low_n`` (percentile CI is unstable).
+LOW_N_GROUPS = 20
+
+
+def grouped_bootstrap(
+    fns: Mapping[str, Callable[[np.ndarray], float]],
+    n_items: int,
+    groups: Any,
+    *,
+    n: int = 2000,
+    ci: float = 0.90,
+    random_state: int = 0,
+    min_groups: int = 10,
+    group_name: str = "water_year",
+) -> dict[str, GroupedBootstrapResult]:
+    """
+    Percentile-interval bootstrap that resamples whole groups (e.g. water
+    years) with replacement.
+
+    Each ``fn`` receives a 1-D integer array of item indices — the
+    concatenation of every item index in the resampled groups (a group drawn
+    twice contributes its indices twice, groups are never split).  The caller
+    closes over its own aligned arrays and indexes them, so paired statistics
+    (e.g. sum(q[idx]) / sum(p[idx])) stay paired.  The point estimate is
+    ``fn(arange(n_items))`` on the same item set.
+
+    Parameters
+    ----------
+    fns          : metric name -> fn(index_array) -> float.
+    n_items      : length of the aligned arrays the fns index into.
+    groups       : length-``n_items`` group label per item (e.g. ``water_year(dates)``).
+    n            : bootstrap replicates (default 2000; 500 leaves ~25 draws per
+                   tail for a 90% interval, which is unstable).
+    min_groups   : refuse (ValueError) below this many distinct groups.
+                   Between ``min_groups`` and 19 groups the result is flagged
+                   ``low_n=True``.
+
+    Scope: sampling uncertainty of the group draw only.  Within-group
+    dependence (seasonality, intra-year persistence) is preserved; **between-
+    group persistence is NOT captured** (groups are treated as exchangeable) —
+    see ``annual_lag1_autocorrelation``.  The returned ``scope`` says so.
+    """
+    if n_items < 1:
+        raise ValueError("grouped_bootstrap: n_items must be >= 1")
+    g = np.asarray(groups)
+    if g.shape != (n_items,):
+        raise ValueError(
+            f"grouped_bootstrap: groups must have shape ({n_items},), got {g.shape}"
+        )
+    labels, inverse = np.unique(g, return_inverse=True)
+    n_groups = int(labels.size)
+    if n_groups < min_groups:
+        raise ValueError(
+            f"grouped_bootstrap needs >={min_groups} groups ({group_name}), got {n_groups}. "
+            "Refusing to report an interval from too few groups."
+        )
+    members = [np.flatnonzero(inverse == k) for k in range(n_groups)]
+
+    all_idx = np.arange(n_items)
+    point: dict[str, float] = {}
+    for k, fn in fns.items():
+        try:
+            point[k] = float(fn(all_idx))
+        except Exception:
+            point[k] = float("nan")
+
+    rng = np.random.default_rng(random_state)
+    boot: dict[str, list[float]] = {k: [] for k in fns}
+    for _ in range(n):
+        draw = rng.integers(0, n_groups, size=n_groups)
+        idx = np.concatenate([members[j] for j in draw])
+        for k, fn in fns.items():
+            try:
+                v = float(fn(idx))
+            except Exception:
+                continue
+            if np.isfinite(v):
+                boot[k].append(v)
+
+    low_n = n_groups < LOW_N_GROUPS
+    out: dict[str, GroupedBootstrapResult] = {}
+    for k in fns:
+        samps = boot[k]
+        if len(samps) >= 10:
+            lo, hi = _quantile_bounds(samps, ci)
+        else:
+            lo, hi = float("nan"), float("nan")
+        out[k] = GroupedBootstrapResult(
+            value=point[k], ci_low=lo, ci_high=hi,
+            method="bootstrap_group", n=n_items, ci_level=ci,
+            n_groups=n_groups, group=group_name, B=int(n), B_valid=len(samps),
+            low_n=low_n, scope=water_year_sampling_scope(),
+        )
+    return out
+
+
+def annual_lag1_autocorrelation(
+    values: Any,
+    groups: Any = None,
+    *,
+    high_threshold: float = 0.3,
+) -> dict[str, Any]:
+    """
+    Lag-1 (Pearson) autocorrelation of an annual series, to flag the between-
+    year persistence that ``grouped_bootstrap`` does not capture.
+
+    ``values`` is either already one value per year (``groups=None``) or an
+    item-level series aggregated by group mean (groups in sorted label order).
+    ``high_threshold`` is a labelled engineering threshold, not a test.
+
+    Returns ``{"r1", "n_years", "high", "threshold"}``; ``r1`` is NaN (and
+    ``high`` False) when fewer than 4 years or zero variance.
+    """
+    v = np.asarray(values, dtype=float)
+    if groups is not None:
+        g = np.asarray(groups)
+        if g.shape != v.shape:
+            raise ValueError("annual_lag1_autocorrelation: values and groups must align")
+        ok = ~np.isnan(v)
+        labels = np.unique(g[ok])
+        v = np.array([v[ok & (g == lab)].mean() for lab in labels])
+    else:
+        v = v[~np.isnan(v)]
+    r1 = float("nan")
+    if v.size >= 4:
+        a, b = v[:-1] - v[:-1].mean(), v[1:] - v[1:].mean()
+        den = float(np.sqrt((a * a).sum() * (b * b).sum()))
+        if den > 0:
+            r1 = float((a * b).sum() / den)
+    return {
+        "r1": r1, "n_years": int(v.size),
+        "high": bool(np.isfinite(r1) and r1 >= high_threshold),
+        "threshold": high_threshold,
+    }

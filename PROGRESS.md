@@ -1,5 +1,23 @@
 # aihydro-core progress
 
+## 2026-10-22 — Science Wave 3 PR-1: grouped bootstrap (branch `vision2040/w3-core`, 0.2.11, additive)
+
+- Added `aihydro_core.science.water_year` (USGS: Oct 1 starts the year, labelled by end year).
+- Added `grouped_bootstrap(fns, n_items, groups, n=2000, ci=0.90, random_state=0, min_groups=10)`:
+  resamples whole groups with replacement, hands each `fn` the concatenated item-index array
+  (paired statistics stay paired), percentile intervals. Output: `method="bootstrap_group"`,
+  `n_groups`, `group`, `B`, `B_valid`, `low_n` (10-19 groups) and a machine-readable `scope`.
+  Fewer than `min_groups` groups raises `ValueError` (no interval is reported).
+- Added `aihydro_core.science.scope` (stdlib-only): `make_scope`, `water_year_sampling_scope`,
+  `scope_excludes` with the critique-M6 shape `{"varies","assumes","excludes"}`; reusable by watershed.
+- Added `annual_lag1_autocorrelation` (critique S2): reports the between-year persistence the
+  grouped bootstrap does NOT capture. Its `high` flag uses a labelled engineering threshold (0.3), not a test.
+- Limitation, tested and documented: groups are exchangeable, so within-year dependence is kept
+  but between-year persistence is not.
+- B defaults to 2000 (critique M7); the caller is responsible for building groups that are complete
+  in every aligned series and for computing the point estimate on that same set (the function
+  computes it on all `n_items`).
+
 ## 2026-10-03 — RO-Crate export (2040 slice 5 P5.2, branch `vision2040/slice5-core`, 0.2.4)
 
 - Added `aihydro_core.export`: `to_rocrate` (RO-Crate 1.3 + Process Run Crate 0.6, one

@@ -130,6 +130,9 @@ _BOOTSTRAP_EXPORTS = {
     "bootstrap_ci",
     "block_bootstrap_ci",
     "bootstrap_dict",
+    "water_year",
+    "grouped_bootstrap",
+    "annual_lag1_autocorrelation",
 }
 
 
@@ -152,4 +155,7 @@ if TYPE_CHECKING:
         bootstrap_ci,
         block_bootstrap_ci,
         bootstrap_dict,
+        water_year,
+        grouped_bootstrap,
+        annual_lag1_autocorrelation,
     )
