@@ -191,3 +191,17 @@ class TestLag1:
     def test_too_short_is_nan_not_high(self):
         r = annual_lag1_autocorrelation([1.0, 2.0, 3.0])
         assert np.isnan(r["r1"]) and r["high"] is False
+
+
+def test_uncertainty_method_lists_every_emitted_method():
+    from typing import get_args
+    from aihydro_core.science import UncertaintyMethod, bootstrap_ci, block_bootstrap_ci, bootstrap_dict
+    x = np.random.default_rng(0).normal(size=200)
+    emitted = {
+        bootstrap_ci(np.mean, x)["method"],
+        block_bootstrap_ci(np.mean, x)["method"],
+        bootstrap_dict({"m": np.mean}, x, use_block=True)["m"]["method"],
+        bootstrap_dict({"m": np.mean}, x)["m"]["method"],
+        grouped_bootstrap({"m": lambda i: 0.0}, 200, np.arange(200) % 20)["m"]["method"],
+    }
+    assert emitted <= set(get_args(UncertaintyMethod))
