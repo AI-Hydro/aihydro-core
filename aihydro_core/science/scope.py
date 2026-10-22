@@ -64,7 +64,16 @@ def water_year_sampling_scope() -> dict[str, list[str]]:
 
 
 def scope_excludes(scope: "dict | None", term: str) -> bool:
-    """True when ``term`` is declared excluded (or no scope is declared at all)."""
-    if not isinstance(scope, dict) or not all(k in scope for k in _KEYS):
+    """
+    Conservative: ``term`` counts as excluded unless it is explicitly in
+    ``scope["varies"]``.  A malformed or absent scope excludes everything.
+    Membership is exact list membership (no substring matching); ``varies`` and
+    ``excludes`` must be lists/tuples of strings or the scope is treated as malformed.
+    """
+    if not isinstance(scope, dict):
         return True
-    return term in scope["excludes"]
+    for key in ("varies", "excludes"):
+        val = scope.get(key)
+        if not isinstance(val, (list, tuple)) or not all(isinstance(x, str) for x in val):
+            return True
+    return term not in scope["varies"]

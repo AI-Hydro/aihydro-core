@@ -14,6 +14,18 @@
   grouped bootstrap does NOT capture. Its `high` flag uses a labelled engineering threshold (0.3), not a test.
 - Limitation, tested and documented: groups are exchangeable, so within-year dependence is kept
   but between-year persistence is not.
+- Review fixes: dropped replicates are reported (`B_valid`, `valid_frac`, `ci_degraded` when <95%
+  valid, NaN CI with `ci_reason` when <50% valid or the point estimate is NaN/raises; one warning per
+  raising metric). `n >= 100`, `0 < ci < 1`, `min_groups >= 2`, NaN group labels rejected.
+  `low_n` now means < 30 groups. Metrics in one call share the same group draws.
+- Coverage (honest): percentile group bootstrap under-covers at small group counts. Seeded
+  simulation, iid years, 20 groups, nominal 90%, sample mean: 0.88 over 2000 trials (0.905 over the
+  200 trials in the test-suite; statistic-dependent, skewed/ratio statistics can be worse). Surfaced
+  as `coverage_note` / `COVERAGE_NOTE`.
+- `water_year` uses the local wall-clock date for tz-aware input (tz dropped, not converted) and
+  rejects numeric dtypes (TypeError). `scope_excludes` is conservative: excluded unless explicitly in
+  `varies`; malformed scope = excluded. `annual_lag1_autocorrelation` pairs only truly consecutive
+  years (`n_pairs`, `has_gaps`).
 - B defaults to 2000 (critique M7); the caller is responsible for building groups that are complete
   in every aligned series and for computing the point estimate on that same set (the function
   computes it on all `n_items`).
