@@ -10,6 +10,10 @@ Task: seal a result the way a downstream package would.
      SHA-256 of the canonical JSON bytes (recomputed here with hashlib);
   2. a ``HydroResult`` validates and round-trips through ``to_dict``;
   3. an IID bootstrap CI of the mean is reproducible for a fixed seed.
+
+Socket block: an IN-PROCESS patch of the Python ``socket`` module (connect, create_connection,
+getaddrinfo). It does not cover child processes or C libraries that open sockets themselves, so
+it is evidence that this Python code made no network call, not an OS-level sandbox.
 """
 from __future__ import annotations
 
