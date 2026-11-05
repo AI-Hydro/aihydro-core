@@ -1,5 +1,12 @@
 # aihydro-core progress
 
+## 2026-11-05 — install-alone CI (branch `vision2040/install-alone`, no code change, no version bump)
+
+- AGU ecosystem audit C1 ("independently usable libraries"): `.github/workflows/install-alone.yml` builds the wheel, installs only it
+  (`[science]`) into a fresh venv outside the checkout and runs `scripts/install_alone_check.py` with every socket connection refused.
+  Task: the canonical record digest is key-order independent and equals SHA-256 of the canonical bytes; a `HydroResult` validates and
+  round-trips; an IID bootstrap CI is reproducible for a fixed seed. Python 3.9, 3.10, 3.12.
+
 ## 2026-10-22 — Science Wave 3 PR-1: grouped bootstrap (branch `vision2040/w3-core`, 0.2.11, additive)
 
 - Added `aihydro_core.science.water_year` (USGS: Oct 1 starts the year, labelled by end year).
