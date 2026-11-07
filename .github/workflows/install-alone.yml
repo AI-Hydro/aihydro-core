@@ -24,7 +24,7 @@ concurrency:
 jobs:
   install-alone:
     name: Install alone (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Python 3.9 (requires-python floor) is not provided on ubuntu-latest (26.04)
     strategy:
       fail-fast: false
       matrix:
